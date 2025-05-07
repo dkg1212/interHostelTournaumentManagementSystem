@@ -1,36 +1,35 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require('cookie-parser');
 const dotenv = require("dotenv");
 const mysqlpool = require("./config/db");
+const userRoutes = require('./routes/userRoutes');
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: 'http://localhost:5173', // frontend origin
+  credentials: true,
+}));
+
+app.use(cookieParser());
 app.use(express.json());
 
 // Routes
-app.use('/api/v1/hostels',require("./routes/hostel"))
+app.use('/api', userRoutes);
+app.use('/api/v1/hostels', require("./routes/hostel"));
 
 app.get('/', (req, res) => res.send("API is running ....."));
 
-app.get('/test', async (req, res) => {
-    try {
-        const [rows] = await mysqlpool.query("SELECT 1");
-        res.json({ message: "This is a test route!", db: rows });
-    } catch (err) {
-        res.status(500).json({ error: "Database error", details: err });
-    }
-});
-
 // Start server after confirming DB connection
 mysqlpool.query("SELECT 1").then(() => {
-    console.log("MySQL DB is connected .....");
-
-    const PORT = process.env.PORT || 5050;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
+  console.log("MySQL DB is connected .....");
+  const PORT = process.env.PORT || 5050;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }).catch((error) => {
-    console.error("Database connection failed:", error);
+  console.error("Database connection failed:", error);
 });

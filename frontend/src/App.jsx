@@ -1,12 +1,18 @@
 import React from 'react';
-import HostelList from './components/HostelList';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/Login';
+import SignupPage from './pages/Signup';
 
-const App=()=> {
+function App() {
   return (
-    
-    <div className="App">
-      <HostelList />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+      </Routes>
+    </Router>
   );
 }
 

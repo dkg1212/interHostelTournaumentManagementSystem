@@ -89,9 +89,10 @@ const createHostel = async (req, res) => {
       const { name, gender } = req.body;
   
       const [result] = await db.query(
-        "UPDATE hostels SET name = ?, gender = ? WHERE id = ?",
-        [name, gender, hostelID]
+        "UPDATE hostels SET name = ?, gender = ?, warden_name = ? WHERE id = ?",
+        [name, gender, warden_name, hostelID]
       );
+      
   
       res.status(200).send({
         success: true,
