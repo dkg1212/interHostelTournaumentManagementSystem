@@ -1,7 +1,30 @@
-// src/components/Body.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Body() {
+  const [user, setUser] = useState(null); // Holds the user data
+  const navigate = useNavigate();
+
+  // Check if user is logged in by reading from localStorage (or context/redux)
+  useEffect(() => {
+    const loggedInUser = JSON.parse(localStorage.getItem('user'));
+    if (loggedInUser) {
+      setUser(loggedInUser);
+    }
+  }, []);
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/login');
+    setUser(null);
+  };
+
+  // Handle Get Started Button (Navigate to login page)
+  const handleGetStarted = () => {
+    navigate('/login');
+  };
+
   return (
     <main>
       {/* Hero Section */}
@@ -9,9 +32,22 @@ function Body() {
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl font-semibold mb-4">The Best Esports Tournament Platform</h1>
           <p className="text-xl mb-8">Manage your tournaments with ease, track stats, and engage with your community like never before.</p>
-          <h1 className="bg-red-500 px-6 py-2 text-lg font-semibold rounded-lg shadow-lg hover:bg-yellow-600">
-            Get Started
-          </h1>
+          {user ? (
+            <div className="text-lg">
+              <p>Welcome, {user.name} ({user.role})</p>
+              <button 
+                className="bg-yellow-500 px-6 py-2 text-lg font-semibold rounded-lg shadow-lg hover:bg-yellow-600 mt-4"
+                onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="bg-yellow-500 px-6 py-2 text-lg font-semibold rounded-lg shadow-lg hover:bg-yellow-600"
+              onClick={handleGetStarted}>
+              Get Started
+            </button>
+          )}
         </div>
       </section>
 
