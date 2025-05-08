@@ -1,17 +1,14 @@
-import axios from 'axios';
+import API from './api';
 
-const BASE_URL = 'http://localhost:5050/api/v1/hostels'; // Make sure port matches
+export const fetchHostels = () => API.get('/v1/hostels/getAll');
 
-export const fetchHostels = () => axios.get(`${BASE_URL}/getAll`);
-
-export const getHostelById = (id) => axios.get(`${BASE_URL}/get/${id}`);
+export const getHostelById = (id) => API.get(`/v1/hostels/get/${id}`);
 
 export const createHostel = (hostelData) =>
-  axios.post(`${BASE_URL}/addHostel`, hostelData);
+  API.post('/v1/hostels/addHostel', hostelData);
 
-export const updateHostel = (id, hostelData) => {
-  return axios.put(`${BASE_URL}/updateHostel/${id}`, hostelData);
-};
+export const updateHostel = (id, hostelData) =>
+  API.put(`/v1/hostels/updateHostel/${id}`, hostelData);
 
 export const deleteHostel = (id) =>
-  axios.delete(`${BASE_URL}/deleteHostel/${id}`);
+  API.delete(`/v1/hostels/deleteHostel/${id}`);

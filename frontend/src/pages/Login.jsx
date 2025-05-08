@@ -18,17 +18,17 @@ function Login() {
     setError('');
     try {
       const res = await login(form);
-      console.log('Login response:', res.data);
+      console.log('Login response:', res);  // Now we log the correct response
 
-      if (res.data?.success) {
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        navigate('/');
+      if (res?.success) {
+        localStorage.setItem('user', JSON.stringify(res.user));  // Store the user info in localStorage
+        navigate('/');  // Redirect to home or role-based dashboard
       } else {
-        setError(res.data?.message || 'Login failed');
+        setError(res?.message || 'Login failed');  // Set error if login failed
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.message || 'Login failed');  // Handle API errors
     }
   };
 
