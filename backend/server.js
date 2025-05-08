@@ -4,6 +4,9 @@ const cookieParser = require('cookie-parser');
 const dotenv = require("dotenv");
 const mysqlpool = require("./config/db");
 const userRoutes = require('./routes/userRoutes');
+const eventRoutes=require("./routes/eventRoutes")
+const eventParticipationRouter =require("./routes/eventParticipationRoutes")
+const eventScoresRoutes=require("./routes/eventScoresRoutes")
 
 dotenv.config();
 
@@ -19,7 +22,10 @@ app.use(express.json());
 
 // Routes
 app.use('/api', userRoutes);
+app.use('/api', eventRoutes);
+app.use('/api',eventParticipationRouter)
 app.use('/api/v1/hostels', require("./routes/hostel"));
+app.use('/api/eventScores',eventScoresRoutes)
 
 app.get('/', (req, res) => res.send("API is running ....."));
 
