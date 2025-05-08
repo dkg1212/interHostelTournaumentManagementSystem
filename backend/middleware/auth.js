@@ -1,31 +1,48 @@
 const jwt = require("jsonwebtoken");
-const db = require("../config/db");
 
-const userAuth = async (req, res, next) => {
+// Make sure to set JWT_SECRET in your environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret'; 
+
+// Middleware to verify JWT and attach user info to req
+const requireAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: No token provided",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
   try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).send("No token provided");
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Fetch user from DB
-    const [users] = await db.query("SELECT id, name, email, role FROM users WHERE id = ?", [decoded.id]);
-
-    if (users.length === 0) {
-      return res.status(404).send("User not found");
-    }
-
-    req.user = users[0]; // attach user info to request
+    // Use JWT_SECRET from the environment
+    const decoded = jwt.verify(token, JWT_SECRET); 
+    req.user = decoded; // decoded should contain { id, role, ... }
     next();
-  } catch (error) {
-    res.status(401).send("Invalid or expired token");
+  } catch (err) {
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden: Invalid or expired token",
+    });
   }
 };
 
+// Middleware to allow only specific roles (e.g., dsw, tusc)
+const requireRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Access denied",
+      });
+    }
+    next();
+  };
+};
+
 module.exports = {
-  userAuth,
+  requireAuth,
+  requireRole,
 };

@@ -1,20 +1,16 @@
-// src/components/Header.jsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 function Header() {
   return (
-    <header className="bg-gray-900 w-screen text-white">
-      <div className="max-w-6xl mx-auto p-6 flex justify-between items-center">
-        <div className="text-2xl font-bold">Tournament</div>
-        <nav>
-          <ul className="flex space-x-6">
-            <li><a href="#" className="hover:text-gray-400">Home</a></li>
-            <li><a href="#features" className="hover:text-gray-400">Features</a></li>
-            <li><a href="#about" className="hover:text-gray-400">About</a></li>
-            <li><a href="#contact" className="hover:text-gray-400">Contact</a></li>
-          </ul>
-        </nav>
-      </div>
+    <header className="bg-black bg-opacity-70 text-white px-6 py-4 flex justify-between items-center shadow-lg fixed w-full z-20">
+      <h1 className="text-2xl font-bold tracking-wide">🏆 Tournament Manager</h1>
+      <nav className="space-x-6">
+        <Link to="/" className="hover:text-blue-400 transition">Home</Link>
+        <Link to="/about" className="hover:text-blue-400 transition">About</Link>
+        <Link to="/contact" className="hover:text-blue-400 transition">Contact</Link>
+        <Link to="/login" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white transition">Login</Link>
+      </nav>
     </header>
   );
 }

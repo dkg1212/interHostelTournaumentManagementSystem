@@ -10,23 +10,17 @@ const {
   logoutUser,
 } = require('../controllers/userController');
 
-// CREATE a new user
+const { requireAuth, requireRole } = require('../middleware/auth');
+
+// Public routes
 router.post('/signup', createUser);
-
 router.post('/login', loginUser);
+router.post('/logout', logoutUser);
 
-router.post('/logout',logoutUser );
-  
-// READ all users
-router.get('/users', getUsers);
+// Protected routes
+router.get('/users', requireAuth, requireRole('dsw', 'tusc'), getUsers);
+router.get('/users/:id', requireAuth, getUserById);
+router.put('/users/:id', requireAuth, updateUser);
+router.delete('/users/:id', requireAuth, requireRole('dsw', 'tusc'), deleteUser);
 
-// READ a user by ID
-router.get('/users/:id', getUserById);
-
-// UPDATE a user
-router.put('/users/:id', updateUser);
-
-// DELETE a user
-router.delete('/users/:id', deleteUser);
-
-module.exports = router;
+module.exports=router

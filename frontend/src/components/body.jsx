@@ -1,102 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRightCircle } from 'lucide-react';
 
 function Body() {
-  const [user, setUser] = useState(null); // Holds the user data
   const navigate = useNavigate();
 
-  // Check if user is logged in by reading from localStorage (or context/redux)
-  useEffect(() => {
-    const loggedInUser = JSON.parse(localStorage.getItem('user'));
-    if (loggedInUser) {
-      setUser(loggedInUser);
+  const handleDashboardClick = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      alert('Please login to view the dashboard.');
+      navigate('/login');
     }
-  }, []);
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
-    setUser(null);
-  };
-
-  // Handle Get Started Button (Navigate to login page)
-  const handleGetStarted = () => {
-    navigate('/login');
   };
 
   return (
-    <main>
-      {/* Hero Section */}
-      <section className="bg-blue-900 text-white h-screen flex items-center justify-center text-center">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl font-semibold mb-4">The Best Esports Tournament Platform</h1>
-          <p className="text-xl mb-8">Manage your tournaments with ease, track stats, and engage with your community like never before.</p>
-          {user ? (
-            <div className="text-lg">
-              <p>Welcome, {user.name} ({user.role})</p>
-              <button 
-                className="bg-yellow-500 px-6 py-2 text-lg font-semibold rounded-lg shadow-lg hover:bg-yellow-600 mt-4"
-                onClick={handleLogout}>
-                Logout
-              </button>
-            </div>
-          ) : (
-            <button 
-              className="bg-yellow-500 px-6 py-2 text-lg font-semibold rounded-lg shadow-lg hover:bg-yellow-600"
-              onClick={handleGetStarted}>
-              Get Started
-            </button>
-          )}
-        </div>
-      </section>
+    <div className="relative min-h-screen w-full h-[85vh] overflow-hidden">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute w-full h-full object-cover z-0 brightness-75"
+      >
+        <source src="/videos/tournament.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
 
-      {/* Key Features Section */}
-      <section id="features" className="py-20 bg-gray-100">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl font-semibold mb-12">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-semibold mb-4">Seamless Tournament Creation</h3>
-              <p>Quickly create tournaments, set rules, and invite players. It's that easy!</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-semibold mb-4">Live Brackets & Updates</h3>
-              <p>Track your matches and tournament progress in real-time with live updates.</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-semibold mb-4">Advanced Stats & Analytics</h3>
-              <p>Get detailed statistics and analytics for each player and match.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Statistics Section */}
-      <section className="bg-blue-900 text-white py-20">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl font-semibold mb-12">Tournament Stats</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
-            <div>
-              <h3 className="text-4xl font-bold mb-2">500+</h3>
-              <p>Tournaments</p>
-            </div>
-            <div>
-              <h3 className="text-4xl font-bold mb-2">100K+</h3>
-              <p>Players</p>
-            </div>
-            <div>
-              <h3 className="text-4xl font-bold mb-2">3000+</h3>
-              <p>Matches</p>
-            </div>
-            <div>
-              <h3 className="text-4xl font-bold mb-2">50+</h3>
-              <p>Games Supported</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+      {/* Overlay Content */}
+      <div className="relative z-10 h-full flex flex-col justify-center items-center text-white text-center px-4">
+        <h2 className="text-5xl font-extrabold mb-4 drop-shadow-xl">Welcome to Tournament Manager</h2>
+        <p className="text-lg mb-6 max-w-2xl drop-shadow-md">
+          Organize and track tournaments in real-time. Stylish. Fast. Reliable.
+        </p>
+        <button
+          onClick={handleDashboardClick}
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 text-white rounded-full text-lg flex items-center gap-2 shadow-lg transition duration-300"
+        >
+          Go to Dashboard <ArrowRightCircle />
+        </button>
+      </div>
+    </div>
   );
 }
 

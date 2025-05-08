@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { signup } from '../services/auth';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 
 export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'student' });
@@ -21,83 +23,130 @@ export default function Signup() {
   };
 
   return (
-    <div className="relative min-h-screen min-w-screen flex items-center justify-center bg-black">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center filter brightness-50 blur-sm"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1590490350431-c55b67c3a214?auto=format&fit=crop&w=1470&q=80')",
-        }}
-      ></div>
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black bg-opacity-70"></div>
-
-      {/* Signup Form */}
-      <div className="relative z-10 w-full max-w-md p-8 bg-[#111] bg-opacity-90 rounded-lg shadow-xl text-white">
-        <h1 className="text-3xl font-bold text-center text-red-600 mb-6">Betflix</h1>
-        <h2 className="text-xl font-semibold mb-4 text-center">Create an Account</h2>
-        {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Full Name"
-            className="w-full p-3 rounded bg-[#333] text-white placeholder-gray-400 focus:outline-none"
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Email Address"
-            className="w-full p-3 rounded bg-[#333] text-white placeholder-gray-400 focus:outline-none"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            placeholder="Password"
-            className="w-full p-3 rounded bg-[#333] text-white placeholder-gray-400 focus:outline-none"
-            required
-          />
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full p-3 rounded bg-[#333] text-white focus:outline-none"
+    <div className="flex items-center justify-center bg-gradient-to-r from-indigo-900 to-indigo-700 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="min-w-screen w-full max-w-5xl min-h-screen bg-indigo-200 shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row"
+      >
+        {/* Left: Signup Form */}
+        <div className="p-20 flex flex-col justify-center">
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="text-3xl font-bold text-gray-800 mb-4"
           >
-            <option value="student">Student</option>
-            <option value="hostel_admin">Hostel Admin</option>
-            <option value="dsw">DSW</option>
-            <option value="tusc">TUSC</option>
-          </select>
+            Create Your Account ✍️
+          </motion.h2>
 
-          <button
-            type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 transition p-3 rounded font-semibold"
+          <motion.p
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+            className="text-gray-500 mb-8"
           >
-            Sign Up
-          </button>
-        </form>
+            Sign up to join the tournament management system
+          </motion.p>
 
-        <p className="text-sm text-gray-400 mt-6 text-center">
-          Already have an account?{' '}
-          <span
-            className="text-white hover:underline cursor-pointer"
-            onClick={() => navigate('/login')}
+          <motion.form
+            onSubmit={handleSubmit}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="space-y-6"
           >
-            Sign In
-          </span>
-        </p>
-      </div>
+            <div>
+              <label htmlFor="name" className="block mb-1 text-sm font-medium text-gray-600">Full Name</label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="John Doe"
+                required
+                className="w-full border border-gray-800 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-600">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                required
+                className="w-full border border-gray-800 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-600">Password</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+                className="w-full border border-gray-700rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="role" className="block mb-1 text-sm font-medium text-gray-600">Role</label>
+              <select
+                id="role"
+                name="role"
+                value={form.role}
+                onChange={handleChange}
+                className="w-full border border-gray-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="student">Student</option>
+                <option value="hostel_admin">Hostel Admin</option>
+                <option value="dsw">DSW</option>
+                <option value="tusc">TUSC</option>
+              </select>
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-md shadow-md transition"
+            >
+              Sign Up
+            </motion.button>
+          </motion.form>
+
+          <div className="mt-6 text-center text-sm text-gray-500">
+            Already have an account?{' '}
+            <Link to="/login" className="text-indigo-600 hover:underline">Sign In</Link>
+          </div>
+        </div>
+
+        {/* Right: Illustration */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="md:w-4/6 bg-indigo-100 flex items-center justify-center"
+        >
+          <img
+            src="/fingerprint-login.png"
+            alt="Signup Illustration"
+            className="h-full object-cover p-6"
+          />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

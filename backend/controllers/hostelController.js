@@ -86,27 +86,42 @@ const createHostel = async (req, res) => {
   const updateHostel = async (req, res) => {
     try {
       const hostelID = req.params.id;
-      const { name, gender } = req.body;
+      const { name, gender, warden_name } = req.body;
+  
+      if (!name || !gender || !warden_name) {
+        return res.status(400).send({
+          success: false,
+          message: "Please provide name, gender, and warden_name",
+        });
+      }
   
       const [result] = await db.query(
         "UPDATE hostels SET name = ?, gender = ?, warden_name = ? WHERE id = ?",
         [name, gender, warden_name, hostelID]
       );
-      
+  
+      if (result.affectedRows === 0) {
+        return res.status(404).send({
+          success: false,
+          message: "Hostel not found or no changes made",
+        });
+      }
   
       res.status(200).send({
         success: true,
         message: "Hostel updated successfully",
       });
+  
     } catch (error) {
-      console.log(error);
+      console.error("Update Hostel Error:", error); // Log full error
       res.status(500).send({
         success: false,
         message: "Error while updating hostel",
-        error,
+        error: error.message || error,
       });
     }
   };
+  
   
   const deleteHostel = async (req, res) => {
     try {

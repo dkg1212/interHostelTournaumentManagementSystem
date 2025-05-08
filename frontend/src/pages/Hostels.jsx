@@ -3,7 +3,7 @@ import Dashboard from './pages/Dashboard';
 import HostelList from './components/HostelList';
 import AddHostel from './components/AddHostel';
 
-const App = () => {
+const Hostels = () => {
   const [refresh, setRefresh] = useState(false);
 
   const refreshHostels = () => {
@@ -22,4 +22,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Hostels;
