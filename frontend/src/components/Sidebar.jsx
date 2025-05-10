@@ -19,7 +19,7 @@ const Sidebar = ({ role }) => {
       { to: "/dashboard/tusc/submit", label: "Submit Results" },
     ],
     dsw: [
-      { to: "/dashboard/dsw", label: "Review Results" },
+      { to: "/dashboard/dsw/review-results", label: "Review Results" },
       { to: "/dashboard/dsw/approve", label: "Approve Entries" },
       { to: "/dashboard/dsw/reports", label: "Reports" },
     ],

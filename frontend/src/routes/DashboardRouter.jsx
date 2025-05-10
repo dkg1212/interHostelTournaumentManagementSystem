@@ -10,18 +10,14 @@ const DashboardRouter = () => {
 
   if (!user) return <Navigate to="/login" />;
 
-  switch (user.role) {
-    case "student":
-      return <DashboardStudent />;
-    case "hostel_admin":
-      return <DashboardHostelAdmin />;
-    case "tusc":
-      return <DashboardTUSC />;
-    case "dsw":
-      return <DashboardDSW />;
-    default:
-      return <Navigate to="/login" />;
-  }
+  const roleBasedRoutes = {
+    student: <DashboardStudent />,
+    hostel_admin: <DashboardHostelAdmin />,
+    tusc: <DashboardTUSC />,
+    dsw: <DashboardDSW />,
+  };
+
+  return roleBasedRoutes[user.role] || <Navigate to="/login" />;
 };
 
 export default DashboardRouter;

@@ -23,12 +23,39 @@ const getAllEventScores = async (req, res) => {
   }
 };
 
+// Get event scores for review (with approval statuses)
+const getEventScoresWithApprovals = async (req, res) => {
+  try {
+    const [data] = await db.query(`
+      SELECT 
+        es.id AS score_id,
+        es.score,
+        es.remarks,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.tusc_approved,
+        e.dsw_approved,
+        e.final_approved,
+        h.name AS hostel_name,
+        u.name AS user_name,
+        t.name AS team_name
+      FROM event_scores es
+      LEFT JOIN events e ON es.event_id = e.id
+      LEFT JOIN hostels h ON es.hostel_id = h.id
+      LEFT JOIN users u ON es.user_id = u.id
+      LEFT JOIN teams t ON es.team_id = t.id
+    `);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching review data', error: error.message });
+  }
+};
+
 // Create a new event score
 const createEventScore = async (req, res) => {
   try {
     const { event_id, hostel_id, user_id, team_id, score, remarks } = req.body;
 
-    // Insert event score into the database
     const [result] = await db.query(
       'INSERT INTO event_scores (event_id, hostel_id, user_id, team_id, score, remarks) VALUES (?, ?, ?, ?, ?, ?)',
       [event_id, hostel_id, user_id || null, team_id || null, score, remarks]
@@ -77,9 +104,76 @@ const deleteEventScore = async (req, res) => {
   }
 };
 
+// ✅ Get a single event score by ID with joined names
+const getEventScoreById = async (req, res) => {
+  try {
+    const scoreId = req.params.id;
+
+    const [rows] = await db.query(
+      `SELECT es.id, es.event_id, es.hostel_id, es.user_id, es.team_id, es.score, es.remarks,
+              e.name AS event_name,
+              h.name AS hostel_name,
+              u.name AS user_name,
+              t.name AS team_name
+       FROM event_scores es
+       LEFT JOIN events e ON es.event_id = e.id
+       LEFT JOIN hostels h ON es.hostel_id = h.id
+       LEFT JOIN users u ON es.user_id = u.id
+       LEFT JOIN teams t ON es.team_id = t.id
+       WHERE es.id = ?`,
+      [scoreId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event score not found' });
+    }
+
+    res.status(200).json({ success: true, data: rows[0] });
+  } catch (error) {
+    console.error('Error fetching event score by ID:', error);
+    res.status(500).json({ success: false, message: 'Error fetching event score', error: error.message });
+  }
+};
+
+// (Optional) Get event score by names instead of IDs
+const getEventScoreByNames = async (req, res) => {
+  try {
+    const { eventName, hostelName, userName, teamName } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT es.id, es.event_id, es.hostel_id, es.user_id, es.team_id, es.score, es.remarks,
+              e.name AS event_name,
+              h.name AS hostel_name,
+              u.name AS user_name,
+              t.name AS team_name
+       FROM event_scores es
+       LEFT JOIN events e ON es.event_id = e.id
+       LEFT JOIN hostels h ON es.hostel_id = h.id
+       LEFT JOIN users u ON es.user_id = u.id
+       LEFT JOIN teams t ON es.team_id = t.id
+       WHERE e.name = ? AND h.name = ? AND (u.name = ? OR t.name = ?)`,
+      [eventName, hostelName, userName || "", teamName || ""]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Event score not found' });
+    }
+
+    res.status(200).json({ success: true, data: rows[0] });
+  } catch (error) {
+    console.error('Error fetching event score by names:', error);
+    res.status(500).json({ success: false, message: 'Error fetching event score', error: error.message });
+  }
+};
+
+
+
 module.exports = {
   getAllEventScores,
   createEventScore,
   updateEventScore,
   deleteEventScore,
+  getEventScoresWithApprovals,
+  getEventScoreById,
+  getEventScoreByNames,
 };

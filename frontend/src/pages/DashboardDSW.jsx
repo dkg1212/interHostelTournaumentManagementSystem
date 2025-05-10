@@ -1,36 +1,57 @@
+/* eslint-disable no-unused-vars */
 // src/pages/DashboardDSW.jsx
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Toopbar";
-import { fetchEventStats, approveEntry, rejectEntry } from "../services/eventService";
+import {
+  fetchEventStats,
+  approveEntry,
+  rejectEntry,
+} from "../services/eventService";
 
 const DashboardDSW = () => {
-  const [eventStats, setEventStats] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState({});
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadEventStats = async () => {
+    const loadEvents = async () => {
       try {
-        // fetchEventStats() returns { success, totalScores, data }
-        const res = await fetchEventStats();
-        // grab the array inside `data`
-        setEventStats(res.data || []);
-      // eslint-disable-next-line no-unused-vars
+        const response = await fetchEventStats();
+        if (response.success) {
+          setEvents(response.data);
+        } else {
+          setError("Failed to fetch events.");
+        }
       } catch (err) {
-        setError("Error loading event stats");
+        setError("Error fetching event stats.");
       } finally {
         setLoading(false);
       }
     };
-    loadEventStats();
+
+    loadEvents();
   }, []);
 
-  const handleApproval = (eventId, action) => {
-    if (action === "approve") {
-      approveEntry(eventId);
-    } else {
-      rejectEntry(eventId);
+  const handleAction = async (eventId, action) => {
+    setActionLoading((prev) => ({ ...prev, [eventId]: true }));
+
+    try {
+      if (action === "approve") {
+        await approveEntry(eventId);
+        alert("Approved successfully");
+      } else {
+        await rejectEntry(eventId);
+        alert("Rejected successfully");
+      }
+
+      // Remove event from the list
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+    } catch (err) {
+      alert("Action failed");
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [eventId]: false }));
     }
   };
 
@@ -40,65 +61,76 @@ const DashboardDSW = () => {
       <div className="flex-1">
         <Topbar />
         <div className="p-6">
-          <h2 className="text-2xl font-bold mb-4">DSW Dashboard</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">DSW Dashboard – Event Approvals</h1>
+            <a
+              href="/dashboard/dsw/review-result"
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              Review Results →
+            </a>
+          </div>
 
           {loading ? (
-            <div>Loading event data...</div>
+            <p>Loading events...</p>
           ) : error ? (
-            <div className="text-red-500">{error}</div>
+            <p className="text-red-600">{error}</p>
+          ) : events.length === 0 ? (
+            <p className="text-gray-500">No events pending approval.</p>
           ) : (
-            <>
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold">Event Stats</h3>
-                <table className="table-auto w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border p-2">Event Name</th>
-                      <th className="border p-2">Hostel</th>
-                      <th className="border p-2">Result</th>
-                      <th className="border p-2">Actions</th>
+            <div className="overflow-x-auto">
+              <table className="min-w-full border bg-white shadow rounded">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-3 border">Name</th>
+                    <th className="p-3 border">Description</th>
+                    <th className="p-3 border">Date</th>
+                    <th className="p-3 border">TUSC Approved</th>
+                    <th className="p-3 border">DSW Approved</th>
+                    <th className="p-3 border">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((event) => (
+                    <tr key={event.id} className="hover:bg-gray-50">
+                      <td className="p-3 border">{event.name}</td>
+                      <td className="p-3 border">{event.description}</td>
+                      <td className="p-3 border">
+                        {new Date(event.event_date).toLocaleDateString("en-IN", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </td>
+                      <td className="p-3 border text-center">
+                        {event.tusc_approved ? "✅" : "❌"}
+                      </td>
+                      <td className="p-3 border text-center">
+                        {event.dsw_approved ? "✅" : "❌"}
+                      </td>
+                      <td className="p-3 border text-center">
+                        <button
+                          onClick={() => handleAction(event.id, "approve")}
+                          disabled={actionLoading[event.id]}
+                          className="bg-green-600 text-white px-3 py-1 rounded mr-2 disabled:opacity-50"
+                          aria-label="Approve event"
+                        >
+                          {actionLoading[event.id] ? "Approving..." : "Approve"}
+                        </button>
+                        <button
+                          onClick={() => handleAction(event.id, "reject")}
+                          disabled={actionLoading[event.id]}
+                          className="bg-red-500 text-white px-3 py-1 rounded disabled:opacity-50"
+                          aria-label="Reject event"
+                        >
+                          {actionLoading[event.id] ? "Rejecting..." : "Reject"}
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {eventStats.map((evt) => (
-                      <tr key={evt.id}>
-                        <td className="border p-2">{evt.event_name}</td>
-                        <td className="border p-2">{evt.hostel_name}</td>
-                        <td className="border p-2">{evt.score}</td>
-                        <td className="border p-2">
-                          <button
-                            onClick={() => handleApproval(evt.id, "approve")}
-                            className="bg-green-500 text-white px-3 py-1 rounded-md"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleApproval(evt.id, "reject")}
-                            className="bg-red-500 text-white px-3 py-1 rounded-md ml-2"
-                          >
-                            Reject
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {eventStats.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="text-center p-4">
-                          No event stats available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="text-xl font-semibold">Export Reports</h3>
-                <button className="bg-blue-500 text-white px-4 py-2 rounded-md mt-2">
-                  Export Event Results
-                </button>
-              </div>
-            </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
 
-// Make sure to set JWT_SECRET in your environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your_fallback_secret'; 
+// Use environment variable or fallback secret (not recommended in prod)
+const JWT_SECRET = process.env.JWT_SECRET || "your_fallback_secret";
 
-// Middleware to verify JWT and attach user info to req
+// Middleware to check token and attach user data to req
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -17,9 +17,8 @@ const requireAuth = (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    // Use JWT_SECRET from the environment
-    const decoded = jwt.verify(token, JWT_SECRET); 
-    req.user = decoded; // decoded should contain { id, role, ... }
+    const decoded = jwt.verify(token, JWT_SECRET); // { id, role, email, ... }
+    req.user = decoded; // Attach user payload to request
     next();
   } catch (err) {
     return res.status(403).json({
@@ -29,13 +28,13 @@ const requireAuth = (req, res, next) => {
   }
 };
 
-// Middleware to allow only specific roles (e.g., dsw, tusc)
+// Middleware to restrict access to specific roles (e.g., 'dsw', 'tusc')
 const requireRole = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: "Forbidden: Access denied",
+        message: "Forbidden: Access denied for your role",
       });
     }
     next();
