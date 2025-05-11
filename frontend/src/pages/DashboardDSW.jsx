@@ -1,135 +1,272 @@
 /* eslint-disable no-unused-vars */
-// src/pages/DashboardDSW.jsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Toopbar";
 import {
   fetchEventStats,
   approveEntry,
   rejectEntry,
+  updateEvent, // Import updateEvent function
 } from "../services/eventService";
+import { FiCheckCircle, FiXCircle, FiEdit } from "react-icons/fi";
 
 const DashboardDSW = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState({});
-  const [error, setError] = useState(null);
+  const [eventStats, setEventStats] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [viewMode, setViewMode] = useState("pending");
+
+  // For toggling visibility of event sections
+  const [showPending, setShowPending] = useState(false);
+  const [showApproved, setShowApproved] = useState(false);
+
+  const [editingEvent, setEditingEvent] = useState(null); // Store the event being edited
+  const [updatedEventData, setUpdatedEventData] = useState({
+    name: "",
+    description: "",
+    event_date: "",
+  }); // Store updated event data
+
+  const loadEvents = async () => {
+    try {
+      const res = await fetchEventStats();
+      setEventStats(res.data);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+    }
+  };
 
   useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        const response = await fetchEventStats();
-        if (response.success) {
-          setEvents(response.data);
-        } else {
-          setError("Failed to fetch events.");
-        }
-      } catch (err) {
-        setError("Error fetching event stats.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadEvents();
   }, []);
 
-  const handleAction = async (eventId, action) => {
-    setActionLoading((prev) => ({ ...prev, [eventId]: true }));
+  const handleApprove = async (id) => {
+    await approveEntry(id);
+    await loadEvents();
+  };
 
+  const handleReject = async (id) => {
+    await rejectEntry(id);
+    await loadEvents();
+  };
+
+  const handleEdit = (event) => {
+    // Set the event being edited and populate the form with its current data
+    setEditingEvent(event);
+    setUpdatedEventData({
+      name: event.name,
+      description: event.description,
+      event_date: event.event_date,
+    });
+  };
+
+  const handleUpdate = async () => {
     try {
-      if (action === "approve") {
-        await approveEntry(eventId);
-        alert("Approved successfully");
-      } else {
-        await rejectEntry(eventId);
-        alert("Rejected successfully");
-      }
-
-      // Remove event from the list
-      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+      await updateEvent(editingEvent.id, updatedEventData);
+      setEditingEvent(null); // Close the edit mode
+      loadEvents(); // Reload events after update
     } catch (err) {
-      alert("Action failed");
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [eventId]: false }));
+      setErrorMessage("Error updating event");
+      console.error("Error updating event:", err);
     }
   };
+
+  const pending = eventStats.filter((e) => !e.dsw_approved);
+  const approved = eventStats.filter((e) => e.dsw_approved);
+
+  const badge = (label, ok) => (
+    <span
+      className={`px-2 py-1 rounded-full text-xs font-medium ${
+        ok ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+      }`}
+    >
+      {label}: {ok ? "✔" : "✘"}
+    </span>
+  );
 
   return (
     <div className="flex">
       <Sidebar role="dsw" />
-      <div className="flex-1">
+      <div className="flex-1 bg-gray-50">
         <Topbar />
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">DSW Dashboard – Event Approvals</h1>
-            <a
-              href="/dashboard/dsw/review-result"
-              className="text-blue-600 underline hover:text-blue-800"
-            >
-              Review Results →
-            </a>
+        <div className="p-6 max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold mb-6 text-gray-800">DSW Dashboard</h2>
+
+          {/* Top Action Buttons */}
+          <div className="flex gap-6 mb-6">
+            <Link to="/participants">
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg shadow-md transition-all">
+                Review Results
+              </button>
+            </Link>
           </div>
 
-          {loading ? (
-            <p>Loading events...</p>
-          ) : error ? (
-            <p className="text-red-600">{error}</p>
-          ) : events.length === 0 ? (
-            <p className="text-gray-500">No events pending approval.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full border bg-white shadow rounded">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="p-3 border">Name</th>
-                    <th className="p-3 border">Description</th>
-                    <th className="p-3 border">Date</th>
-                    <th className="p-3 border">TUSC Approved</th>
-                    <th className="p-3 border">DSW Approved</th>
-                    <th className="p-3 border">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((event) => (
-                    <tr key={event.id} className="hover:bg-gray-50">
-                      <td className="p-3 border">{event.name}</td>
-                      <td className="p-3 border">{event.description}</td>
-                      <td className="p-3 border">
-                        {new Date(event.event_date).toLocaleDateString("en-IN", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </td>
-                      <td className="p-3 border text-center">
-                        {event.tusc_approved ? "✅" : "❌"}
-                      </td>
-                      <td className="p-3 border text-center">
-                        {event.dsw_approved ? "✅" : "❌"}
-                      </td>
-                      <td className="p-3 border text-center">
+          {/* View Mode Toggle */}
+          <div className="flex gap-6 mb-6">
+            <button
+              onClick={() => setShowPending((prev) => !prev)}
+              className={`px-6 py-3 rounded-lg shadow-md ${
+                showPending
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              Pending Events
+            </button>
+            <button
+              onClick={() => setShowApproved((prev) => !prev)}
+              className={`px-6 py-3 rounded-lg shadow-md ${
+                showApproved
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              Approved Events
+            </button>
+          </div>
+
+          {/* Conditional Rendering for Pending Events */}
+          {showPending && (
+            <>
+              <h3 className="text-2xl font-semibold text-gray-800">Pending Events</h3>
+              {pending.length ? (
+                <div className="grid grid-cols-1 gap-6 mt-6">
+                  {pending.map((event) => (
+                    <div
+                      key={event.id}
+                      className="bg-white p-6 rounded-lg shadow-md border-2 border-gray-200"
+                    >
+                      <h4 className="text-xl font-semibold text-gray-800">{event.name}</h4>
+                      <p className="text-gray-600">{event.description}</p>
+                      <p className="text-sm text-gray-500 mt-2">Date: {event.event_date}</p>
+                      <div className="mt-4 flex space-x-4">
+                        {badge("DSW", event.dsw_approved)}
+                        {badge("TUSC", event.tusc_approved)}
+                      </div>
+                      <div className="mt-4 flex space-x-4">
                         <button
-                          onClick={() => handleAction(event.id, "approve")}
-                          disabled={actionLoading[event.id]}
-                          className="bg-green-600 text-white px-3 py-1 rounded mr-2 disabled:opacity-50"
-                          aria-label="Approve event"
+                          onClick={() => handleApprove(event.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center"
                         >
-                          {actionLoading[event.id] ? "Approving..." : "Approve"}
+                          <FiCheckCircle className="mr-2" /> Approve
                         </button>
                         <button
-                          onClick={() => handleAction(event.id, "reject")}
-                          disabled={actionLoading[event.id]}
-                          className="bg-red-500 text-white px-3 py-1 rounded disabled:opacity-50"
-                          aria-label="Reject event"
+                          onClick={() => handleReject(event.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center"
                         >
-                          {actionLoading[event.id] ? "Rejecting..." : "Reject"}
+                          <FiXCircle className="mr-2" /> Reject
                         </button>
-                      </td>
-                    </tr>
+                        <button
+                          onClick={() => handleEdit(event)} // Trigger editing
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
+                        >
+                          <FiEdit className="mr-2" /> Edit
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              ) : (
+                <p className="mt-6 text-gray-600">No pending events.</p>
+              )}
+            </>
+          )}
+
+          {/* Conditional Rendering for Approved Events */}
+          {showApproved && (
+            <>
+              <h3 className="text-2xl font-semibold text-gray-800">Approved Events</h3>
+              {approved.length ? (
+                <div className="grid grid-cols-1 gap-6 mt-6">
+                  {approved.map((event) => (
+                    <div
+                      key={event.id}
+                      className="bg-white p-6 rounded-lg shadow-md border-2 border-gray-200"
+                    >
+                      <h4 className="text-xl font-semibold text-gray-800">{event.name}</h4>
+                      <p className="text-gray-600">{event.description}</p>
+                      <p className="text-sm text-gray-500 mt-2">Date: {event.event_date}</p>
+                      <div className="mt-4 flex space-x-4">
+                        {badge("DSW", event.dsw_approved)}
+                        {badge("TUSC", event.tusc_approved)}
+                      </div>
+                      <div className="mt-4 flex space-x-4">
+                        <button
+                          onClick={() => handleReject(event.id)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center"
+                        >
+                          <FiXCircle className="mr-2" /> Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-6 text-gray-600">No approved events.</p>
+              )}
+            </>
+          )}
+
+          {/* Edit Event Modal */}
+          {editingEvent && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-md w-96">
+                <h3 className="text-xl font-semibold text-gray-800">Edit Event</h3>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleUpdate(); // Call the update function
+                  }}
+                >
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">Event Name</label>
+                    <input
+                      type="text"
+                      value={updatedEventData.name}
+                      onChange={(e) =>
+                        setUpdatedEventData({ ...updatedEventData, name: e.target.value })
+                      }
+                      className="mt-2 px-3 py-2 border border-gray-300 rounded-lg w-full"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      value={updatedEventData.description}
+                      onChange={(e) =>
+                        setUpdatedEventData({ ...updatedEventData, description: e.target.value })
+                      }
+                      className="mt-2 px-3 py-2 border border-gray-300 rounded-lg w-full"
+                    />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">Event Date</label>
+                    <input
+                      type="date"
+                      value={updatedEventData.event_date}
+                      onChange={(e) =>
+                        setUpdatedEventData({ ...updatedEventData, event_date: e.target.value })
+                      }
+                      className="mt-2 px-3 py-2 border border-gray-300 rounded-lg w-full"
+                    />
+                  </div>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEditingEvent(null)} // Close the edit form
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg mr-4"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                    >
+                      Update Event
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>

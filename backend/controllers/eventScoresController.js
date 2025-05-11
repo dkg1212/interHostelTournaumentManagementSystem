@@ -54,7 +54,10 @@ const getEventScoresWithApprovals = async (req, res) => {
 // Create a new event score
 const createEventScore = async (req, res) => {
   try {
-    const { event_id, hostel_id, user_id, team_id, score, remarks } = req.body;
+    let { event_id, hostel_id, user_id, team_id, score, remarks } = req.body;
+
+    // If hostel_id is undefined or empty string, set it to null
+    hostel_id = hostel_id || null;
 
     const [result] = await db.query(
       'INSERT INTO event_scores (event_id, hostel_id, user_id, team_id, score, remarks) VALUES (?, ?, ?, ?, ?, ?)',
@@ -71,6 +74,7 @@ const createEventScore = async (req, res) => {
     res.status(500).send({ success: false, message: 'Error registering event score', error: error.message });
   }
 };
+
 
 // Update an existing event score
 const updateEventScore = async (req, res) => {

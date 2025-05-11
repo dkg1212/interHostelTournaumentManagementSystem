@@ -1,13 +1,20 @@
 // src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
+// Public Pages
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import DashboardRouter from "./routes/DashboardRouter"; // Import DashboardRouter
+
+// Dashboard Router (handles /dashboard routes)
+import DashboardRouter from "./routes/DashboardRouter";
+
+// Special Routes
 import EditEventScore from "./pages/EditEventsScore";
+import Participants from "./pages/Participants"; // ✅ Import Participants page
 
 function App() {
   return (
@@ -20,12 +27,14 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
 
-        {/* Private Routes */}
-        {/* Dashboard Routes, all dashboard related pages are nested under this route */}
+        {/* Dashboard Routes (Private) */}
         <Route path="/dashboard/*" element={<DashboardRouter />} />
 
-        {/* Specific Event Score Edit Route */}
+        {/* Edit Event Score Page */}
         <Route path="/edit-score/:id" element={<EditEventScore />} />
+
+        {/* Manage Participants Page */}
+        <Route path="/participants" element={<Participants />} />
       </Routes>
     </Router>
   );

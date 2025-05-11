@@ -1,8 +1,8 @@
-// PrivateRoutes.jsx
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const PrivateRoutes = () => {
+  const location = useLocation(); // ✅ fix: useLocation hook
   const [user, setUser] = useState(null);
 
   useEffect(() => {
