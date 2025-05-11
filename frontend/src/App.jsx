@@ -35,6 +35,8 @@ function App() {
 
         {/* Manage Participants Page */}
         <Route path="/participants" element={<Participants />} />
+
+        
       </Routes>
     </Router>
   );

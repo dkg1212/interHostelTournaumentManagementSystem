@@ -8,6 +8,7 @@ const {
   deleteEvent,
   approveEvent,
   rejectEvent,
+  getApprovedEvents,
 } = require('../controllers/eventController');
 
 const { requireAuth, requireRole } = require('../middleware/auth');
@@ -32,5 +33,6 @@ router.post('/events/approve', requireAuth, requireRole('dsw', 'tusc'), approveE
 
 // REJECT an event (optional - only DSW and TUSC)
 router.post('/events/reject', requireAuth, requireRole('dsw', 'tusc'), rejectEvent);
+router.get('/approved', getApprovedEvents)
 
 module.exports = router;

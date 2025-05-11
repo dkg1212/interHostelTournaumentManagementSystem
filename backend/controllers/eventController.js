@@ -3,19 +3,32 @@ const db = require('../config/db');
 // Create an event (only DSW and TUSC can create events)
 const createEvent = async (req, res) => {
   try {
-    const { name, description, event_date } = req.body;
+    const { name, description, event_date, event_mode, type } = req.body;
 
-    if (!name || !description || !event_date) {
+    // Validate required fields
+    if (!name || !description || !event_date || !event_mode || !type) {
       return res.status(400).send({ success: false, message: 'All fields are required' });
     }
 
+    // Validate event_mode (should be 'team' or 'solo')
+    if (!['team', 'solo'].includes(event_mode)) {
+      return res.status(400).send({ success: false, message: 'Invalid event mode. It should be "team" or "solo".' });
+    }
+
+    // Validate type (should be 'sports' or 'cultural')
+    if (!['sports', 'cultural'].includes(type)) {
+      return res.status(400).send({ success: false, message: 'Invalid event type. It should be "sports" or "cultural".' });
+    }
+
+    // Authorization check for role (TUSC/DSW)
     if (req.user.role !== 'dsw' && req.user.role !== 'tusc') {
       return res.status(403).send({ success: false, message: 'You are not authorized to create an event' });
     }
 
+    // Insert new event into the database
     const [result] = await db.query(
-      'INSERT INTO events (name, description, event_date, created_by) VALUES (?, ?, ?, ?)',
-      [name, description, event_date, req.user.id]
+      'INSERT INTO events (name, description, event_date, event_mode, type, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, description, event_date, event_mode, type, req.user.id]
     );
 
     res.status(201).send({
@@ -28,6 +41,7 @@ const createEvent = async (req, res) => {
     res.status(500).send({ success: false, message: 'Error creating event', error: error.message });
   }
 };
+
 
 // Get all events (any user)
 const getEvents = async (req, res) => {
@@ -151,6 +165,27 @@ const rejectEvent = async (req, res) => {
   }
 };
 
+const getApprovedEvents = async (req, res) => {
+  try {
+    const [events] = await db.query(
+      `SELECT * FROM events WHERE tusc_approved = true AND dsw_approved = true`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Fetched approved events successfully",
+      events,
+    });
+  } catch (error) {
+    console.error("Error fetching approved events:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createEvent,
   getEvents,
@@ -159,4 +194,5 @@ module.exports = {
   deleteEvent,
   approveEvent,
   rejectEvent,
+  getApprovedEvents
 };

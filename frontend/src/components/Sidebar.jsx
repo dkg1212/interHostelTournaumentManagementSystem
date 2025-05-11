@@ -44,7 +44,7 @@ const Sidebar = ({ role }) => {
     tusc: [
       { to: "/dashboard/tusc", label: "Manage Events" },
       { to: "/dashboard/tusc/coordinators", label: "Assign Coordinators" },
-      { to: "/dashboard/tusc/submit", label: "Submit Results" },
+      { to: "/dashboard/tusc/submit-result", label: "Submit Results" },
     ],
     dsw: [
       { to: "/dashboard/dsw/review-results", label: "Review Results" },

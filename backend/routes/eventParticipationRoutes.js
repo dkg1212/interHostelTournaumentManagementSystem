@@ -5,7 +5,8 @@ const {
   getParticipations,
   updateParticipation,
   deleteParticipation,
-  getParticipantsWithNames       // Cancel participation
+  getParticipantsWithNames ,
+  getSubmittedResults      // Cancel participation
 } = require('../controllers/eventParticipationController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
@@ -28,4 +29,6 @@ router.put('/participations/:id', requireRole('dsw', 'tusc'), updateParticipatio
 router.delete('/participations/:id', requireRole('dsw', 'tusc'), deleteParticipation);
 
 router.get('/participations/:event_id', requireRole('dsw', 'tusc'), getParticipantsWithNames);
+router.get('/submitted-results/:event_id', getSubmittedResults);
+
 module.exports = router;

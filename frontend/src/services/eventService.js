@@ -1,3 +1,4 @@
+ 
 import axios from "axios";
 
 const API_URL = "http://localhost:5050/api";
@@ -177,3 +178,52 @@ export const updateEvent = async (eventId, eventData) => {
     throw new Error("Error updating event");
   }
 };
+
+export const deleteEvent = async (eventId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.delete(`${API_URL}/events/${eventId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting event", error);
+      throw error;
+    }
+  };  
+
+  export const getApprovedEvents = async () => {
+    try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${API_URL}/approved`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.data.events;
+      } catch (error) {
+        console.error("Error deleting event", error);
+        throw error;
+      }
+    }; 
+
+    export const registerForEvent = async (eventName) => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await axios.post(
+            `${API_URL}/participations`, 
+            { event_name: eventName },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          return response.data;
+        } catch (error) {
+          console.error("Registration failed:", error);
+          throw error;
+        }
+      };
