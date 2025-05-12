@@ -16,6 +16,7 @@ import EditEventScore from "./pages/EditEventsScore";
 import Participants from "./pages/Participants"; // ✅ Import Participants page
 import ProfilePage from "./components/ProfilePage"; // Add Profile page route
 import RegisterStudentPage from './pages/RegisterStudentPage';
+import ApprovedEvents from "./pages/ApprovedEvents";
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         {/* Profile Page */}
         <Route path="/profile" element={<ProfilePage />} /> {/* Add Profile route */}
         <Route path="/register-student" element={<RegisterStudentPage />} />
+        <Route path="/student/events" element={<ApprovedEvents />} />
 
 
         {/* Edit Event Score Page */}

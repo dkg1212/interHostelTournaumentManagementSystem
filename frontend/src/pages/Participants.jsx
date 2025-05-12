@@ -66,7 +66,7 @@ const Participants = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/participations', form);
+      await api.post('/participations/byadmin', form);
       setForm({ event_name: '', user_id: '', position: 'participant', score: 0 });
       fetchParticipants();
     } catch (err) {

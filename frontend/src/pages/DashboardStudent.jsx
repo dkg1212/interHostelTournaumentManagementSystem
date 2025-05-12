@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Toopbar";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const DashboardStudent = () => {
   const [student, setStudent] = useState(null);
@@ -31,11 +31,11 @@ const DashboardStudent = () => {
         if (res.data.student) {
           setStudent(res.data.student);
         } else {
-          setStudent(null); // Just in case
+          setStudent(null);
         }
       } catch (err) {
         if (err.response?.status === 404) {
-          setStudent(null); // No profile found
+          setStudent(null);
         } else {
           console.error(err);
           setError(err.response?.data?.message || 'Failed to fetch student');
@@ -53,7 +53,7 @@ const DashboardStudent = () => {
   };
 
   const handleRegisterProfile = () => {
-    navigate('/register-student'); // You must define this route
+    navigate('/register-student');
   };
 
   if (loading) return <p className="text-gray-600 p-4">Loading student data...</p>;
@@ -77,7 +77,7 @@ const DashboardStudent = () => {
                   <p><strong>Hostel:</strong> {student.hostel_name || 'Not assigned'}</p>
                 </div>
                 <button
-                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
                   onClick={handleProfileClick}
                 >
                   View Profile
@@ -89,6 +89,11 @@ const DashboardStudent = () => {
                 <p className="text-gray-700 mt-2">
                   Here you can see your upcoming events, register for events, and check your results.
                 </p>
+                <div className="mt-3">
+                  <Link to="/student/events" className="text-blue-500 underline">
+                    View Upcoming Events
+                  </Link>
+                </div>
               </div>
             </>
           ) : (
@@ -96,7 +101,7 @@ const DashboardStudent = () => {
               <h2 className="text-xl font-semibold">No Student Profile Found</h2>
               <p className="mt-2">You haven't created a student profile yet. Please register to continue.</p>
               <button
-                className="mt-4 bg-yellow-600 text-white px-4 py-2 rounded"
+                className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded"
                 onClick={handleRegisterProfile}
               >
                 Create Student Profile

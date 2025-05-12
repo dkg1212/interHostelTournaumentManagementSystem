@@ -209,17 +209,19 @@ export const deleteEvent = async (eventId) => {
       }
     }; 
 
-    export const registerForEvent = async (eventId) => {
-        const token = localStorage.getItem("token");
-        const response = await axios.post(
-          "/api/event/register",
-          { event_id: eventId }, // ✅ Match what the backend expects
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        return response.data;
-      };
-      
+  export const registerForEvent = async (eventId, eventName) => {
+  const token = localStorage.getItem("token");
+  const response = await axios.post(
+    "/api/participations",
+    { 
+      event_id: eventId,
+      event_name: eventName  // Include the event_name
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};

@@ -6,7 +6,8 @@ const {
   updateParticipation,
   deleteParticipation,
   getParticipantsWithNames ,
-  getSubmittedResults      // Cancel participation
+  getSubmittedResults ,     // Cancel participation
+  registerParticipationByAdmin
 } = require('../controllers/eventParticipationController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
@@ -20,7 +21,7 @@ router.use(requireAuth);
 router.get('/participations', getParticipations);
 
 // POST create new participation (TUSC, DSW, hostel_admin)
-router.post('/participations', requireRole('dsw', 'tusc', 'hostel_admin'), registerParticipation);
+router.post('/participations', requireRole('student','dsw', 'tusc', 'hostel_admin'), registerParticipation);
 
 // PUT update position or score
 router.put('/participations/:id', requireRole('dsw', 'tusc'), updateParticipation);
@@ -30,5 +31,10 @@ router.delete('/participations/:id', requireRole('dsw', 'tusc'), deleteParticipa
 
 router.get('/participations/:event_id', requireRole('dsw', 'tusc'), getParticipantsWithNames);
 router.get('/submitted-results/:event_id', getSubmittedResults);
+
+
+router.post('/participations/byadmin', requireRole('dsw', 'tusc', 'hostel_admin'), registerParticipationByAdmin);
+
+
 
 module.exports = router;

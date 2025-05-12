@@ -167,13 +167,33 @@ const rejectEvent = async (req, res) => {
 
 const getApprovedEvents = async (req, res) => {
   try {
+    const userId = req.user?.id;
+
     const [events] = await db.query(
       `SELECT * FROM events WHERE tusc_approved = true AND dsw_approved = true`
     );
 
+    // If user is logged in, check registration
+    if (userId) {
+      const eventsWithRegistration = await Promise.all(events.map(async (event) => {
+        const [registration] = await db.query(
+          `SELECT id FROM event_participation WHERE event_id = ? AND user_id = ?`,
+          [event.id, userId]
+        );
+        return { ...event, isRegistered: registration.length > 0 };
+      }));
+
+      return res.status(200).json({
+        success: true,
+        message: 'Fetched approved events with registration status',
+        events: eventsWithRegistration,
+      });
+    }
+
+    // If no user logged in, just return events
     res.status(200).json({
       success: true,
-      message: "Fetched approved events successfully",
+      message: 'Fetched approved events',
       events,
     });
   } catch (error) {
@@ -185,6 +205,7 @@ const getApprovedEvents = async (req, res) => {
     });
   }
 };
+
 
 //By user
 const registerParticipation = async (req, res) => {
@@ -209,6 +230,42 @@ const registerParticipation = async (req, res) => {
   }
 };
 
+const getEventResults = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    const [participants] = await db.query(
+      `
+      SELECT ep.user_id, u.name AS user_name, ep.score
+      FROM event_participation ep
+      JOIN users u ON ep.user_id = u.id
+      WHERE ep.event_id = ?
+      ORDER BY ep.score DESC
+      `,
+      [eventId]
+    );
+
+    const resultsWithPosition = participants.map((participant, index) => ({
+      ...participant,
+      position: index + 1, // 1st, 2nd, 3rd, etc.
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: "Event results fetched successfully",
+      results: resultsWithPosition,
+    });
+  } catch (error) {
+    console.error("Error fetching event results:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch event results",
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   createEvent,
   getEvents,
@@ -219,4 +276,5 @@ module.exports = {
   rejectEvent,
   getApprovedEvents,
   registerParticipation,
+  getEventResults
 };
