@@ -186,6 +186,29 @@ const getApprovedEvents = async (req, res) => {
   }
 };
 
+//By user
+const registerParticipation = async (req, res) => {
+  try {
+    const { event_id } = req.body;
+    const { id: user_id, hostel_id } = req.user; // hostel_id must be available in the token
+
+    if (!event_id) {
+      return res.status(400).json({ success: false, message: "Event ID is required" });
+    }
+
+    // Now include hostel_id in the insert
+    await pool.query(
+      "INSERT INTO event_participation (event_id, user_id, hostel_id) VALUES (?, ?, ?)",
+      [event_id, user_id, hostel_id]
+    );
+
+    res.status(201).json({ success: true, message: "Successfully registered for the event" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 module.exports = {
   createEvent,
   getEvents,
@@ -194,5 +217,6 @@ module.exports = {
   deleteEvent,
   approveEvent,
   rejectEvent,
-  getApprovedEvents
+  getApprovedEvents,
+  registerParticipation,
 };

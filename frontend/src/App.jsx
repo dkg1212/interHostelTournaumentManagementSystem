@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -15,6 +14,9 @@ import DashboardRouter from "./routes/DashboardRouter";
 // Special Routes
 import EditEventScore from "./pages/EditEventsScore";
 import Participants from "./pages/Participants"; // ✅ Import Participants page
+import ProfilePage from "./components/ProfilePage"; // Add Profile page route
+import RegisterStudentPage from './pages/RegisterStudentPage';
+
 
 function App() {
   return (
@@ -30,13 +32,16 @@ function App() {
         {/* Dashboard Routes (Private) */}
         <Route path="/dashboard/*" element={<DashboardRouter />} />
 
+        {/* Profile Page */}
+        <Route path="/profile" element={<ProfilePage />} /> {/* Add Profile route */}
+        <Route path="/register-student" element={<RegisterStudentPage />} />
+
+
         {/* Edit Event Score Page */}
         <Route path="/edit-score/:id" element={<EditEventScore />} />
 
         {/* Manage Participants Page */}
         <Route path="/participants" element={<Participants />} />
-
-        
       </Routes>
     </Router>
   );
