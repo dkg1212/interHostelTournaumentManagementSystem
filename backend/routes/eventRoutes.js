@@ -10,7 +10,10 @@ const {
   rejectEvent,
   getApprovedEvents,
   registerParticipation,
-  getEventResults
+  getEventResults,
+  updateEventScores,
+  verifyEventResult
+
 } = require('../controllers/eventController');
 
 const { requireAuth, requireRole } = require('../middleware/auth');
@@ -39,6 +42,11 @@ router.get('/approved', getApprovedEvents)
 // REGISTER participation (only logged-in users)
 router.post('/event/register', requireAuth, registerParticipation);
 router.get("/eventResults/:eventId", getEventResults);
+
+router.put('/eventResults/:eventId/update',updateEventScores);
+
+// Verify result
+router.put('/events/:id/verify-result', verifyEventResult);
 
 
 module.exports = router;

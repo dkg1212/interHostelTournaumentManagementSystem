@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { updateEventScore } = require('./eventScoresController');
 
 // Create an event (only DSW and TUSC can create events)
 const createEvent = async (req, res) => {
@@ -265,6 +266,88 @@ const getEventResults = async (req, res) => {
   }
 };
 
+// Update event scores
+const updateEventScores = async (req, res) => {
+const { eventId } = req.params;
+  const { user_id, score } = req.body;
+
+  if (!user_id || score === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: "Both user_id and score are required.",
+    });
+  }
+
+  try {
+    const [result] = await db.query(
+      `UPDATE event_participation SET score = ? WHERE event_id = ? AND user_id = ?`,
+      [score, eventId, user_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching participant found to update.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Score updated successfully.",
+    });
+  } catch (error) {
+    console.error("Error updating score:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+// Verify event result (TUSC or DSW)
+const verifyEventResult = async (req, res) => {
+  const { id } = req.params;
+
+  if (req.user.role !== 'dsw' && req.user.role !== 'tusc') {
+    return res.status(403).json({
+      success: false,
+      message: "You are not authorized to verify results",
+    });
+  }
+
+  const column =
+    req.user.role === 'dsw'
+      ? 'result_verified_by_dsw'
+      : 'result_verified_by_tusc';
+
+  try {
+    const [result] = await db.query(
+      `UPDATE events SET ${column} = true WHERE id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Event result verified by ${req.user.role.toUpperCase()}`,
+    });
+  } catch (error) {
+    console.error("Error verifying result:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
 
 module.exports = {
   createEvent,
@@ -276,5 +359,7 @@ module.exports = {
   rejectEvent,
   getApprovedEvents,
   registerParticipation,
-  getEventResults
+  getEventResults,
+  updateEventScores,
+  verifyEventResult
 };

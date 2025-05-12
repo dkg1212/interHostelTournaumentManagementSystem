@@ -1,4 +1,3 @@
- 
 import axios from "axios";
 
 const API_URL = "http://localhost:5050/api";
@@ -192,9 +191,9 @@ export const deleteEvent = async (eventId) => {
       console.error("Error deleting event", error);
       throw error;
     }
-  };  
+  };
 
-  export const getApprovedEvents = async () => {
+export const getApprovedEvents = async () => {
     try {
         const token = localStorage.getItem("token");
         const response = await axios.get(`${API_URL}/approved`, {
@@ -209,7 +208,7 @@ export const deleteEvent = async (eventId) => {
       }
     }; 
 
-  export const registerForEvent = async (eventId, eventName) => {
+export const registerForEvent = async (eventId, eventName) => {
   const token = localStorage.getItem("token");
   const response = await axios.post(
     "/api/participations",
@@ -224,4 +223,61 @@ export const deleteEvent = async (eventId) => {
     }
   );
   return response.data;
+};
+
+// 1. **Update Event Scores**
+export const updateEventScores = async (eventId, userId, newScore) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.put(
+      `${API_URL}/eventResults/${eventId}/update`,{
+            user_id: userId,
+        score: newScore,},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating event scores:", error.response?.data?.message || error.message);
+    throw new Error("Error updating event scores");
+  }
+};
+
+// 2. **Verify Event Result**
+export const verifyEventResult = async (eventId) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.put(
+      `${API_URL}/events/${eventId}/verify-result`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;  // Event result verification success response
+  } catch (error) {
+    console.error("Error verifying event result:", error.response?.data?.message || error.message);
+    throw new Error("Error verifying event result");
+  }
+};
+
+// 3. **Fetch Event Results**
+export const fetchEventResults = async (eventId) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${API_URL}/eventResults/${eventId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;  // Return the event results (scores and participants)
+  } catch (error) {
+    console.error("Error fetching event results:", error.response?.data?.message || error.message);
+    throw new Error("Error fetching event results");
+  }
 };

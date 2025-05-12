@@ -1,7 +1,8 @@
  
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate,Link } from "react-router-dom";
 import Topbar from "../components/Toopbar"; // Keep Topbar for navigation
+import EventResultReview from "./EventResultReview"; // Adjust path as needed
 import {
   createEvent,
   fetchEventStats,
@@ -23,8 +24,15 @@ const DashboardTUSC = () => {
   const [viewMode, setViewMode] = useState("pending");
   const [eventMode, setEventMode] = useState("team");  // 'team' or 'solo'
   const [eventType, setEventType] = useState("sports"); // 'sports' or 'cultural'
+  const [showReview, setShowReview] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+
+  const handleReviewClick = () => {
+    setSelectedEventId(4); // Replace with the actual event ID you want to review
+    setShowReview(true);}
    
   const [maxTeamMembers, setMaxTeamMembers] = useState("");
+  const navigate = useNavigate();
 
   
 
@@ -43,6 +51,11 @@ const DashboardTUSC = () => {
     } catch (err) {
       console.error("Error fetching events:", err);
     }
+  };
+
+   const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
   useEffect(() => {
@@ -167,7 +180,7 @@ const DashboardTUSC = () => {
 
           {/* Bottom buttons */}
           <div className="mt-auto">
-            <button className="bg-gray-600 hover:bg-gray-700 text-white px-5 py-3 rounded-lg w-full">
+            <button onClick={handleLogout} className="bg-gray-600 hover:bg-gray-700 text-white px-5 py-3 rounded-lg w-full">
               Logout
             </button>
           </div>
@@ -176,6 +189,21 @@ const DashboardTUSC = () => {
         {/* Main content */}
         <div className="flex-1 p-6 max-w-7xl mx-auto">
           {/* Create Event Form */}
+          {/* Inside your event loop */}
+
+    <div className="p-4">
+
+      <button
+        onClick={handleReviewClick}
+        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+      >
+        Review Event Result
+      </button>
+
+      {showReview && selectedEventId && (
+        <EventResultReview eventId={selectedEventId} />
+      )}
+    </div>
           {showCreateForm && (
             <form
               onSubmit={handleEventSubmit}
@@ -298,6 +326,7 @@ const DashboardTUSC = () => {
                   required
                 />
               </div>
+              
               <div>
                 <label className="block text-lg font-medium">Date</label>
                 <input
