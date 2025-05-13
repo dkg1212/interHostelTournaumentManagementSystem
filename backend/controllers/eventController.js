@@ -268,8 +268,8 @@ const getEventResults = async (req, res) => {
 
 // Update event scores
 const updateEventScores = async (req, res) => {
-const { eventId } = req.params;
-  const { user_id, score } = req.body;
+  const { eventId } = req.params;
+  const { user_id, score, position } = req.body;
 
   if (!user_id || score === undefined) {
     return res.status(400).json({
@@ -278,10 +278,13 @@ const { eventId } = req.params;
     });
   }
 
+  const validPositions = ["1st", "2nd", "3rd", "participant", "Honorable Mention", "Disqualified"];
+  const finalPosition = validPositions.includes(position) ? position : "participant"; // Default to 'participant'
+
   try {
     const [result] = await db.query(
-      `UPDATE event_participation SET score = ? WHERE event_id = ? AND user_id = ?`,
-      [score, eventId, user_id]
+      `UPDATE event_participation SET score = ?, position = ? WHERE event_id = ? AND user_id = ?`,
+      [score, finalPosition, eventId, user_id]
     );
 
     if (result.affectedRows === 0) {
@@ -304,6 +307,7 @@ const { eventId } = req.params;
     });
   }
 };
+
 // Verify event result (TUSC or DSW)
 const verifyEventResult = async (req, res) => {
   const { id } = req.params;

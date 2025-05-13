@@ -42,3 +42,4 @@ mysqlpool.query("SELECT 1").then(() => {
 }).catch((error) => {
   console.error("Database connection failed:", error);
 });
+

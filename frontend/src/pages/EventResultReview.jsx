@@ -12,6 +12,7 @@ const EventResultReview = () => {
   const [eventResults, setEventResults] = useState(null);
   const [loadingResults, setLoadingResults] = useState(false);
   const [editedScores, setEditedScores] = useState({});
+  const [editedPositions, setEditedPositions] = useState({});
   const [updatingUserId, setUpdatingUserId] = useState(null);
 
   useEffect(() => {
@@ -54,10 +55,17 @@ const EventResultReview = () => {
     }));
   };
 
-  
+  const handlePositionChange = (userId, newPosition) => {
+    setEditedPositions((prev) => ({
+      ...prev,
+      [userId]: newPosition,
+    }));
+  };
 
   const handleUpdateSingleScore = async (userId) => {
     const newScore = editedScores[userId];
+    const newPosition = editedPositions[userId];
+
     if (newScore === undefined || newScore === "") {
       alert("Please enter a score before updating.");
       return;
@@ -65,16 +73,16 @@ const EventResultReview = () => {
 
     try {
       setUpdatingUserId(userId);
-      const res = await updateEventScores(selectedEvent.id, userId, newScore);
+      const res = await updateEventScores(selectedEvent.id, userId, newScore, newPosition);
       if (res.success) {
-        alert("Score updated successfully!");
+        alert("Score and position updated successfully!");
         handleReviewResults(selectedEvent.id);
       } else {
-        alert("Failed to update score.");
+        alert("Failed to update score and position.");
       }
     } catch (error) {
-      console.error("Error updating score:", error.message);
-      alert("Something went wrong while updating score.");
+      console.error("Error updating score and position:", error.message);
+      alert("Something went wrong while updating score and position.");
     } finally {
       setUpdatingUserId(null);
     }
@@ -143,7 +151,7 @@ const EventResultReview = () => {
                         className="flex justify-between items-center text-sm my-2 border-b pb-2"
                       >
                         <span className="font-medium">
-                          {participant.user_name}
+                          {participant.user_name} ({participant.position})
                         </span>
                         <div className="flex items-center gap-2">
                           <input
@@ -160,6 +168,26 @@ const EventResultReview = () => {
                               )
                             }
                           />
+                          <select
+                            className="p-1 border rounded"
+                            value={
+                              editedPositions[participant.user_id] ??
+                              participant.position
+                            }
+                            onChange={(e) =>
+                              handlePositionChange(
+                                participant.user_id,
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="1st">1st</option>
+                            <option value="2nd">2nd</option>
+                            <option value="3rd">3rd</option>
+                            <option value="participant">Participant</option>
+                            <option value="Honorable Mention">Honorable Mention</option>
+                            <option value="Disqualified">Disqualified</option>
+                          </select>
                           <button
                             onClick={() =>
                               handleUpdateSingleScore(participant.user_id)

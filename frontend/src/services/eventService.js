@@ -226,13 +226,16 @@ export const registerForEvent = async (eventId, eventName) => {
 };
 
 // 1. **Update Event Scores**
-export const updateEventScores = async (eventId, userId, newScore) => {
+export const updateEventScores = async (eventId, userId, newScore, newPosition) => {
   try {
     const token = localStorage.getItem("token");
     const response = await axios.put(
-      `${API_URL}/eventResults/${eventId}/update`,{
-            user_id: userId,
-        score: newScore,},
+      `${API_URL}/eventResults/${eventId}/update`, 
+      {
+        user_id: userId,
+        score: newScore,
+        position: newPosition,  // Include position in the request payload
+      },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -245,6 +248,7 @@ export const updateEventScores = async (eventId, userId, newScore) => {
     throw new Error("Error updating event scores");
   }
 };
+
 
 // 2. **Verify Event Result**
 export const verifyEventResult = async (eventId) => {
