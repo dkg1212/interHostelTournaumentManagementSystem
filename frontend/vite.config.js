@@ -12,6 +12,7 @@ export default defineConfig({
   server: {
     proxy: {
       // Proxy all /api requests to your Express server
+      
       '/api': {
         target: 'http://localhost:5050',
         changeOrigin: true,

@@ -1,6 +1,7 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import Topbar from "../components/Toopbar";
 
 const ProfilePage = () => {
   const [student, setStudent] = useState(null);
@@ -16,9 +17,9 @@ const ProfilePage = () => {
 
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
+  // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
 
-  // Fetch student and hostel data
   useEffect(() => {
     const fetchStudent = async () => {
       try {
@@ -99,38 +100,56 @@ const ProfilePage = () => {
     }
   };
 
-  const handleBack = () => {
-    navigate('/dashboard');
-  };
-
-  if (loading) return <p className="text-gray-600 p-4">Loading profile...</p>;
-  if (error) return <p className="text-red-600 p-4">Error: {error}</p>;
-
   const getHostelName = (hostelId) => {
     const hostel = hostels.find((h) => h.id === parseInt(hostelId));
     return hostel ? hostel.name : 'Not assigned';
   };
 
+  if (loading) return <p className="text-gray-600 p-4">Loading profile...</p>;
+  if (error) return <p className="text-red-600 p-4">Error: {error}</p>;
+
+  // Sidebar component
+  const Sidebar = () => (
+    <div className="w-64 bg-gray-800 text-white h-screen p-4">
+      <h2 className="text-2xl font-semibold text-indigo-500 mb-6">Dashboard</h2>
+      <ul>
+        <li>
+          <Link to="/dashboard" className="block py-2 px-4 hover:bg-indigo-600">Home</Link>
+        </li>
+        <li>
+          <Link to="/profile" className="block py-2 px-4 hover:bg-indigo-600">Profile</Link>
+        </li>
+        <li>
+          <Link to="/student/events" className="block py-2 px-4 hover:bg-indigo-600">Upcoming Events</Link>
+        </li>
+      </ul>
+    </div>
+  );
+
   return (
-    <div className="p-4">
-      <button onClick={handleBack} className="mb-4 text-blue-500 hover:underline">
-        Back to Dashboard
-      </button>
-      <h1 className="text-2xl font-bold mb-4">Student Profile</h1>
+    <div className="flex">
+      {/* Sidebar */}
+      <Sidebar />
 
-      {student ? (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-indigo-600">Welcome, {student.name}</h2>
-          <div className="space-y-2 text-gray-700 mt-4">
-            <p><strong>Email:</strong> {student.email}</p>
-            <p><strong>Hostel:</strong> {getHostelName(student.hostel_id)}</p>
-            <p><strong>Roll Number:</strong> {student.roll_number}</p>
-            <p><strong>Gender:</strong> {student.gender}</p>
-          </div>
+      <div className="flex-1">
+        {/* Topbar */}
+        <Topbar />
+      {/* Main Content */}
+      <div className="flex-1 p-6">
+        <h1 className="text-3xl font-bold mb-6">Student Profile</h1>
 
-          {isEdit ? (
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-2 mt-4">
+        {student ? (
+          <div className="bg-white rounded-lg shadow-md p-6 max-w-xl mx-auto">
+            <h2 className="text-xl font-semibold text-indigo-600 mb-4">Welcome, {student.name}</h2>
+            <div className="space-y-2 text-gray-700">
+              <p><strong>Email:</strong> {student.email}</p>
+              <p><strong>Hostel:</strong> {getHostelName(student.hostel_id)}</p>
+              <p><strong>Roll Number:</strong> {student.roll_number}</p>
+              <p><strong>Gender:</strong> {student.gender}</p>
+            </div>
+
+            {isEdit ? (
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                 <input
                   type="text"
                   name="roll_number"
@@ -161,21 +180,23 @@ const ProfilePage = () => {
                     </option>
                   ))}
                 </select>
+
+                <div className="flex space-x-4">
+                  <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Update Profile</button>
+                  <button type="button" onClick={() => setIsEdit(false)} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-6">
+                <button onClick={() => setIsEdit(true)} className="bg-yellow-500 text-white px-4 py-2 rounded">Edit Profile</button>
               </div>
-              <div className="mt-4 flex space-x-4">
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Update Profile</button>
-                <button type="button" onClick={() => setIsEdit(false)} className="bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
-              </div>
-            </form>
-          ) : (
-            <div className="mt-4 flex space-x-4">
-              <button onClick={() => setIsEdit(true)} className="bg-yellow-500 text-white px-4 py-2 rounded">Edit Profile</button>
-            </div>
-          )}
-        </div>
-      ) : (
-        <p className="text-gray-600">No student profile found for this account.</p>
-      )}
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-600">No student profile found for this account.</p>
+        )}
+      </div>
+    </div>
     </div>
   );
 };

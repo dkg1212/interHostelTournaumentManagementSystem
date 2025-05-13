@@ -9,6 +9,7 @@ const eventParticipationRouter =require("./routes/eventParticipationRoutes")
 const eventScoresRoutes=require("./routes/eventScoresRoutes")
 const notificationRoutes=require("./routes/notificationRoutes")
 const studentRoutes=require('./routes/studentRoutes')
+const teamRoutes = require('./routes/teamRoutes');
 dotenv.config();
 
 const app = express();
@@ -29,6 +30,7 @@ app.use('/api/v1/hostels', require("./routes/hostel"));
 app.use('/api/eventScores',eventScoresRoutes)
 app.use('/api/notification',notificationRoutes)
 app.use('/api/students/',studentRoutes)
+app.use('/api/teams', teamRoutes);
 
 app.get('/', (req, res) => res.send("API is running ....."));
 

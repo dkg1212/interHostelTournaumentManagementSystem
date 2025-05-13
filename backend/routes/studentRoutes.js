@@ -8,13 +8,14 @@ const {
   deleteStudent,
   getStudentByUserId
 } = require('../controllers/studentController');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 // Routes
-router.post('/', createStudent);
-router.get('/', getStudents);
-router.get('/:id', getStudentById);
-router.put('/:id', updateStudent);
-router.delete('/:id', deleteStudent);
-router.get('/user/:userId', getStudentByUserId);
+router.post('/',requireAuth, createStudent);
+router.get('/', requireAuth,getStudents);
+router.get('/:id',requireAuth,getStudentById);
+router.put('/:id', requireAuth,updateStudent);
+router.delete('/:id',requireAuth,deleteStudent);
+router.get('/user/:userId',requireAuth, getStudentByUserId);
 
 module.exports = router;

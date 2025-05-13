@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Sidebar from "../components/Sidebar";
-import Topbar from "../components/Toopbar";
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import Topbar from "../components/Toopbar";  // Import the Topbar component
 
 const DashboardStudent = () => {
   const [student, setStudent] = useState(null);
@@ -12,6 +11,10 @@ const DashboardStudent = () => {
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ Show sidebar only if not on /dashboard
+  const showSidebar = location.pathname !== '/dashboard';
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -56,13 +59,35 @@ const DashboardStudent = () => {
     navigate('/register-student');
   };
 
+  // Sidebar Component
+  // eslint-disable-next-line no-unused-vars
+  const Sidebar = ({ role }) => (
+    <div className="w-64 bg-gray-800 text-white h-screen p-4">
+      <h2 className="text-2xl font-semibold text-indigo-500 mb-6">Dashboard</h2>
+      <ul>
+        <li>
+          <Link to="/dashboard" className="block py-2 px-4 hover:bg-indigo-600">Home</Link>
+        </li>
+        <li>
+          <Link to="/profile" className="block py-2 px-4 hover:bg-indigo-600">Profile</Link>
+        </li>
+        <li>
+          <Link to="/student/events" className="block py-2 px-4 hover:bg-indigo-600">Upcoming Events</Link>
+        </li>
+      </ul>
+    </div>
+  );
+
   if (loading) return <p className="text-gray-600 p-4">Loading student data...</p>;
   if (error) return <p className="text-red-600 p-4">Error: {error}</p>;
 
   return (
     <div className="flex">
-      <Sidebar role="student" />
+      {/* Sidebar: only show if not on /dashboard */}
+      {showSidebar && <Sidebar role="student" />}
+
       <div className="flex-1">
+        {/* Topbar */}
         <Topbar />
 
         <div className="p-4">
