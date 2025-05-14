@@ -1,47 +1,41 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import Topbar from "../components/Toopbar"; // Keep Topbar for navigation (ensure it's styled)
-import EventResultReview from "./EventResultReview"; // Adjust path as needed
+import { Link, useNavigate } from "react-router-dom";
+// import Sidebar from "../components/Sidebar"; // No longer using separate Sidebar component for this specific layout
+import Topbar from "../components/Toopbar"; // Corrected typo from Toopbar, and assuming it's just Topbar
+import EventResultReview from "./EventResultReview"; // Added for DSW, adjust path as needed
 import {
-  createEvent,
   fetchEventStats,
   approveEntry,
   rejectEntry,
   updateEvent,
-  deleteEvent,
 } from "../services/eventService";
 import {
-  PlusCircle, // Create Event
-  Eye,        // View Events / Review Results
-  ListChecks, // Manage Participants
-  Sun,        // Light Theme
-  Moon,       // Dark Theme
-  LogOut,
   CheckCircle,
   XCircle,
-  Edit3,      // Edit
-  Trash2,     // Delete
-  CalendarDays,
-  Users,      // Team mode
-  User,       // Solo mode
-  Archive,    // Generic icon for event sections
-  AlertTriangle, // For errors or pending status
-  FileText,   // For no items found
-  Loader2,    // For loading states
-  Settings2,  // General Settings / View Mode
-  ShieldCheck, // For Dashboard Title Icon
+  Edit3,
+  CalendarClock, // DSW's choice, fine
+  FileText,     // Standardized to FileText like TUSC
+  Eye,
+  ListFilter,   // DSW's choice, fine
+  AlertTriangle,
+  PlusCircle,   // Not used in DSW sidebar for create, but kept for other potential uses
+  Loader2,
+  ShieldCheck,
+  ListChecks,   // For Manage Participants like TUSC
+  // Menu // No longer needed for Topbar as sidebar is fixed
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Animation Variants (consistent with other components)
-const formVariants = {
+// Animation Variants (consistent with TUSC and DSW needs)
+const formVariants = { // For inline appearing sections like Review
   hidden: { opacity: 0, y: -30, height: 0, overflow: 'hidden' },
   visible: { opacity: 1, y: 0, height: 'auto', overflow: 'visible', transition: { duration: 0.4, ease: "circOut" } },
   exit: { opacity: 0, y: -30, height: 0, overflow: 'hidden', transition: { duration: 0.3, ease: "circIn" } },
 };
 
-const itemVariants = {
+const itemVariants = { // For list items like EventCard
   hidden: { opacity: 0, x: -20 },
   visible: (i) => ({
     opacity: 1,
@@ -51,29 +45,22 @@ const itemVariants = {
   exit: { opacity: 0, x: 20, transition: { duration: 0.2, ease: "easeIn" } },
 };
 
-const pageContainerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.5 } },
+const pageContainerVariants = { // For main sections
+  hidden: { opacity: 0, y:10 }, // Subtle y animation
+  visible: { opacity: 1, y:0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const modalFormVariants = { // For Edit Event Modal
+    initial: { opacity: 0, scale: 0.9, y: 20 },
+    animate: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.2, ease: "easeIn" } },
 };
 
 
-const DashboardTUSC = () => {
-  const [eventData, setEventData] = useState({
-    name: "",
-    description: "",
-    event_date: "",
-    event_mode: "team",
-    type: "sports",
-    max_team_members: "",
-  });
+const DashboardDSW = () => {
   const [eventStats, setEventStats] = useState([]);
   const [notification, setNotification] = useState({ message: '', type: '', show: false });
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showEventSection, setShowEventSection] = useState(true); // Default to true
-  const [viewMode, setViewMode] = useState("pending"); // 'pending' or 'approved'
-  const [showReview, setShowReview] = useState(false);
-  const [selectedEventIdForReview, setSelectedEventIdForReview] = useState(null);
-  const navigate = useNavigate();
+  const [activeViewFilter, setActiveViewFilter] = useState('pending'); // 'pending', 'approved', 'all'
 
   const [editingEvent, setEditingEvent] = useState(null);
   const [updatedEventData, setUpdatedEventData] = useState({
@@ -81,9 +68,16 @@ const DashboardTUSC = () => {
     description: "",
     event_date: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isSubmittingUpdate, setIsSubmittingUpdate] = useState(false);
+  
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const navigate = useNavigate();
+
+  // States for TUSC-like features
+  const [showEventSection, setShowEventSection] = useState(true); // To toggle event list visibility
+  const [showReview, setShowReview] = useState(false);
+  const [selectedEventIdForReview, setSelectedEventIdForReview] = useState(null);
+
 
   useEffect(() => {
     document.documentElement.classList.remove("light", "dark");
@@ -94,89 +88,49 @@ const DashboardTUSC = () => {
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
-
+  
   const showAppNotification = (message, type = 'success', duration = 3000) => {
     setNotification({ message, type, show: true });
-    setTimeout(() => setNotification(n => ({ ...n, show: false })), duration);
-  };
-
-  const handleReviewClick = (eventId) => {
-    setSelectedEventIdForReview(eventId || 4);
-    setShowReview(true);
+    setTimeout(() => {
+      setNotification(n => ({ ...n, show: false }));
+    }, duration);
   };
 
   const loadEvents = async () => {
     try {
       const res = await fetchEventStats();
-      setEventStats(res.data);
+      setEventStats(res.data || []);
     } catch (err) {
       console.error("Error fetching events:", err);
-      showAppNotification("Failed to load events.", "error");
+      showAppNotification("Failed to fetch events.", "error");
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("theme");
-    navigate("/login");
   };
 
   useEffect(() => {
+    // Load events when the event section is shown or filter changes, similar to TUSC
+    // Or just load once if that's preferred for DSW and rely on client-side filtering for activeViewFilter
     if (showEventSection) {
-      loadEvents();
+        loadEvents();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showEventSection, viewMode]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEventData(prev => ({ ...prev, [name]: value }));
-  };
-  const handleUpdateInputChange = (e) => {
-    const { name, value } = e.target;
-    setUpdatedEventData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEventSubmit = async (e) => {
-    e.preventDefault();
-    if (!eventData.name || !eventData.description || !eventData.event_date || (eventData.event_mode === "team" && !eventData.max_team_members)) {
-      showAppNotification("Please fill all required fields.", "error");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      await createEvent({
-        ...eventData,
-        max_team_members: eventData.event_mode === "team" ? parseInt(eventData.max_team_members) : null,
-      });
-      showAppNotification("Event created successfully!", "success");
-      setShowCreateForm(false);
-      setEventData({ name: "", description: "", event_date: "", event_mode: "team", type: "sports", max_team_members: "" });
-      if (showEventSection) await loadEvents();
-    } catch (err) {
-      showAppNotification(err.response?.data?.message || "Error creating event.", "error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [showEventSection]); // Load once on mount if showEventSection is default true
 
   const handleApprove = async (id) => {
     try {
-      await approveEntry(id);
-      showAppNotification("Event approved!", "success");
+      await approveEntry(id); // This service call should handle DSW approval
       await loadEvents();
-    } catch (err) {
+      showAppNotification("Event approved successfully by DSW!", "success");
+    } catch (error) {
       showAppNotification("Failed to approve event.", "error");
     }
   };
 
-  const handleReject = async (id) => {
+  const handleReject = async (id) => { // Or "Un-approve"
     try {
-      await rejectEntry(id);
-      showAppNotification("Event action successful!", "success"); // Generic message for reject/un-approve
+      await rejectEntry(id); // This service call should handle DSW rejection/un-approval
       await loadEvents();
-    } catch (err) {
-      showAppNotification("Failed to process event action.", "error");
+      showAppNotification("Event action successful by DSW!", "success");
+    } catch (error) {
+      showAppNotification("Failed to perform action on event.", "error");
     }
   };
 
@@ -187,355 +141,322 @@ const DashboardTUSC = () => {
       description: event.description,
       event_date: event.event_date ? new Date(event.event_date).toISOString().split('T')[0] : "",
     });
-    setShowCreateForm(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+     window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top if modal is not used or for inline form
   };
 
-  const handleUpdateSubmit = async (e) => {
-    e.preventDefault();
-    if (!updatedEventData.name || !updatedEventData.description || !updatedEventData.event_date) {
-      showAppNotification("All fields are required for updating.", "error");
-      return;
-    }
-    setIsSubmitting(true);
+  const handleUpdate = async () => {
+    if (!editingEvent) return;
+    setIsSubmittingUpdate(true);
     try {
       await updateEvent(editingEvent.id, updatedEventData);
-      showAppNotification("Event updated successfully!", "success");
       setEditingEvent(null);
       loadEvents();
+      showAppNotification("Event updated successfully!", "success");
     } catch (err) {
       showAppNotification(err.response?.data?.message || "Error updating event.", "error");
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingUpdate(false);
     }
   };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
-      try {
-        await deleteEvent(id);
-        showAppNotification("Event deleted successfully!", "success");
-        await loadEvents();
-      } catch (err) {
-        showAppNotification("Error deleting event.", "error");
-      }
-    }
+  
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token"); // DSW might use 'token'
+    localStorage.removeItem("userId"); // DSW might use 'userId'
+    localStorage.removeItem("role");   // DSW might use 'role'
+    localStorage.removeItem("theme");
+    navigate("/login");
   };
 
-  const pending = eventStats.filter((e) => !e.tusc_approved);
-  const approved = eventStats.filter((e) => e.tusc_approved);
+  // For EventResultReview section toggle
+  const handleReviewClick = (eventId) => {
+    setSelectedEventIdForReview(eventId || null); // Pass null if EventResultReview has its own selector
+    setShowReview(true);
+    setShowEventSection(false); // Optionally hide other sections
+  };
 
-  const StatusBadge = ({ label, isApproved }) => (
+  const pendingByDSW = eventStats.filter((e) => !e.dsw_approved);
+  const approvedByDSW = eventStats.filter((e) => e.dsw_approved);
+  const allEvents = eventStats;
+
+
+  const StatusBadge = ({ label, isApproved, specificStatus }) => (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap
         ${isApproved
-          ? "bg-green-100 text-green-700 dark:bg-green-600/80 dark:text-green-100 border border-green-300 dark:border-green-500"
-          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-600/80 dark:text-yellow-100 border border-yellow-300 dark:border-yellow-500"
+          ? "bg-green-100 text-green-700 dark:bg-green-700/30 dark:text-green-300 border border-green-300 dark:border-green-600"
+          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/30 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-600"
         }`}
     >
       {isApproved ? <CheckCircle size={12} className="mr-1" /> : <AlertTriangle size={12} className="mr-1" />}
-      {label}: {isApproved ? "Approved" : "Pending"}
+      {label}: {specificStatus}
     </span>
   );
 
-  const EventItemCard = ({ event, index, isPendingList }) => (
-    <motion.div
+  const EventCard = ({ event, index, onApprove, onRejectOrUnapprove, onEdit, isDSWPendingCard }) => (
+    <motion.div 
       custom={index}
-      variants={itemVariants}
+      variants={itemVariants} // Using itemVariants for staggered animation
       initial="hidden"
       animate="visible"
       exit="exit"
       layout
-      className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-2xl dark:hover:border-gray-600 transition-all duration-300"
+      className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-2xl dark:hover:border-gray-600 transition-all duration-300 flex flex-col"
     >
-      <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">{event.name}</h4>
+      <h4 className="text-lg font-semibold text-gray-800 dark:text-white mb-1 line-clamp-2">{event.name}</h4>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 flex items-center">
-        <CalendarDays size={14} className="mr-2 text-indigo-500 dark:text-indigo-400" />
-        {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'N/A'}
+        <CalendarClock size={14} className="mr-1.5 text-indigo-500 dark:text-indigo-400" />
+        {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'No date'}
       </p>
-      <p className="text-gray-600 dark:text-gray-300 text-sm mb-1 line-clamp-2">{event.description}</p>
-      <div className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5 mb-3">
-        <p className="flex items-center"><Settings2 size={12} className="mr-1.5 text-gray-400 dark:text-gray-500" />Type: <span className="font-medium capitalize ml-1">{event.type}</span></p>
-        <p className="flex items-center">
-            {event.event_mode === 'team' ? <Users size={12} className="mr-1.5 text-gray-400 dark:text-gray-500"/> : <User size={12} className="mr-1.5 text-gray-400 dark:text-gray-500"/>}
-            Mode: <span className="font-medium capitalize ml-1">{event.event_mode}</span>
-        </p>
-        {event.event_mode === 'team' && event.max_team_members && (
-          <p className="flex items-center"><Users size={12} className="mr-1.5 text-gray-400 dark:text-gray-500"/>Max Members: <span className="font-medium ml-1">{event.max_team_members}</span></p>
-        )}
+      <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-3 flex-grow">{event.description}</p>
+      <div className="mb-3 flex flex-wrap gap-2">
+        <StatusBadge label="DSW" isApproved={event.dsw_approved} specificStatus={event.dsw_approved ? "Approved" : "Pending"} />
+        <StatusBadge label="TUSC" isApproved={event.tusc_approved} specificStatus={event.tusc_approved ? "Approved" : "Pending"}/>
       </div>
-
-      <div className="mb-4">
-        <StatusBadge label="TUSC Status" isApproved={event.tusc_approved} />
-      </div>
-
       <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap gap-2 justify-end">
-        {isPendingList && (
+        {isDSWPendingCard && event.tusc_approved && ( // DSW can only approve if TUSC has approved
           <motion.button
             whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-            onClick={() => handleApprove(event.id)}
-            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm"
-          >
-            <CheckCircle size={14} className="mr-1" /> Approve
+            onClick={() => onApprove(event.id)}
+            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm" >
+            <CheckCircle size={14} className="mr-1.5" /> Approve (DSW)
           </motion.button>
         )}
-        {!isPendingList && (
-             <motion.button
-                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                onClick={() => handleReject(event.id)}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm"
-            >
-                <XCircle size={14} className="mr-1" /> Un-approve
-            </motion.button>
+         {isDSWPendingCard && !event.tusc_approved && (
+          <span className="text-xs text-yellow-600 dark:text-yellow-400 p-1.5 rounded-md border border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-700/20">
+            Awaiting TUSC Approval
+          </span>
         )}
-        <motion.button
+        <motion.button // Reject for pending, Un-approve for approved
           whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => handleEdit(event)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm"
-        >
-          <Edit3 size={14} className="mr-1" /> Edit
+          onClick={() => onRejectOrUnapprove(event.id)}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm" >
+          <XCircle size={14} className="mr-1.5" /> 
+          {isDSWPendingCard ? 'Reject (DSW)' : 'Un-approve (DSW)'}
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={() => handleDelete(event.id)}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm"
-        >
-          <Trash2 size={14} className="mr-1" /> Delete
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={() => onEdit(event)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-medium flex items-center shadow-sm" >
+            <Edit3 size={14} className="mr-1.5" /> Edit
         </motion.button>
       </div>
     </motion.div>
   );
 
+  const NotificationDisplay = () => ( // Same as TUSC
+    <AnimatePresence>
+      {notification.show && (
+        <motion.div
+          initial={{ opacity: 0, y: -50, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.8, transition: { duration: 0.2 } }}
+          className={`fixed top-20 right-5 z-[100] p-4 rounded-lg shadow-xl text-white flex items-center space-x-2
+                      ${notification.type === 'success' ? 'bg-green-500' : 
+                        notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`} >
+          {notification.type === 'success' ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
+          <span>{notification.message}</span>
+          <button onClick={() => setNotification(n => ({ ...n, show: false }))} className="ml-auto p-1 rounded-full hover:bg-white/20">
+            <XCircle size={18}/>
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 
-  // MAIN JSX RETURN
+  // Determine which list of events to show
+  let eventsToDisplay = [];
+  if (activeViewFilter === 'pending') eventsToDisplay = pendingByDSW;
+  else if (activeViewFilter === 'approved') eventsToDisplay = approvedByDSW;
+  else if (activeViewFilter === 'all') eventsToDisplay = allEvents;
+
+
   return (
     <div className={`flex flex-col min-h-screen bg-gray-100 dark:bg-slate-950 text-gray-800 dark:text-gray-200`}>
-      <Topbar toggleTheme={toggleTheme} currentTheme={theme} handleLogout={handleLogout} />
-
-      <AnimatePresence>
-        {notification.show && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.8, transition: { duration: 0.2 } }}
-            className={`fixed top-20 right-5 z-[100] p-4 rounded-lg shadow-xl text-white flex items-center space-x-2
-                        ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
-          >
-            {notification.type === 'success' ? <CheckCircle size={24} /> : <AlertTriangle size={24} />}
-            <span>{notification.message}</span>
-            <button onClick={() => setNotification(n => ({ ...n, show: false }))} className="ml-auto p-1 rounded-full hover:bg-white/20">
-              <XCircle size={18} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-
-      <div className="flex flex-1 overflow-hidden pt-16">
-        {/* Sidebar - Black Theme */}
+      <NotificationDisplay />
+      <Topbar
+          currentTheme={theme}
+          toggleTheme={toggleTheme}
+          handleLogout={handleLogout}
+      />
+      <div className="flex flex-1 overflow-hidden pt-16"> {/* pt-16 for Topbar height */}
+        {/* Sidebar - Styled like TUSC */}
         <aside className="bg-gray-900 text-gray-300 w-64 flex-shrink-0 flex flex-col p-4 shadow-2xl">
-          <div className="mb-6">
-            <h3 className="text-xl font-semibold text-white flex items-center">
-                <ShieldCheck size={24} className="mr-2 text-indigo-400"/> TUSC Portal
-            </h3>
-          </div>
-
-          <nav className="flex-grow space-y-2.5">
-            <motion.button
-              whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(79, 70, 229, 0.7)" /* indigo-600 with opacity */ }} // More subtle hover
-              whileTap={{ scale: 0.98 }}
-              onClick={() => { setShowCreateForm(prev => !prev); setEditingEvent(null); }}
-              className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors duration-200 shadow-md"
-            >
-              <PlusCircle size={18} /> <span>{showCreateForm && !editingEvent ? "Close Form" : "Create Event"}</span>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(124, 58, 237, 0.7)" /* purple-600 with opacity */}}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowEventSection(prev => !prev)}
-              className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors duration-200 shadow-md"
-            >
-              <Eye size={18} /> <span>{showEventSection ? "Hide Events" : "View Events"}</span>
-            </motion.button>
-
-            <Link to="/participants">
-              <motion.button
-                whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(13, 148, 136, 0.7)" /* teal-600 with opacity */}}
-                whileTap={{ scale: 0.98 }}
-                className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-500 transition-colors duration-200 shadow-md"
-              >
-                <ListChecks size={18} /> <span>Manage Participants</span>
-              </motion.button>
-            </Link>
-             <motion.button
-                whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(6, 182, 212, 0.7)" /* cyan-600 with opacity */}}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleReviewClick()}
-                className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-500 transition-colors duration-200 shadow-md"
-            >
-                <Eye size={18} /> <span>Review Results (Test)</span>
-            </motion.button>
-          </nav>
-
-          <div className="mt-auto border-t border-gray-700 pt-4">
-            {/* Logout button is now in Topbar, this space can be used for other links or info if needed */}
-            <p className="text-xs text-gray-500 text-center">© {new Date().getFullYear()} IHTMS</p>
-          </div>
+            <div className="mb-6">
+                <h3 className="text-xl font-semibold text-white flex items-center">
+                    <ShieldCheck size={24} className="mr-2 text-indigo-400"/> DSW Portal
+                </h3>
+            </div>
+            <nav className="flex-grow space-y-2.5">
+                <motion.button
+                    whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(79, 70, 229, 0.7)"}}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { setShowEventSection(prev => !prev); setShowReview(false); }}
+                    className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition-colors duration-200 shadow-md"
+                >
+                    <Eye size={18} /> <span>{showEventSection ? "Hide Approvals" : "View Approvals"}</span>
+                </motion.button>
+                <Link to="/participants">
+                    <motion.button
+                        whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(13, 148, 136, 0.7)"}}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-500 transition-colors duration-200 shadow-md"
+                    >
+                        <ListChecks size={18} /> <span>Manage Participants</span>
+                    </motion.button>
+                </Link>
+                <motion.button
+                    whileHover={{ scale: 1.02, x: 2, backgroundColor: "rgba(6, 182, 212, 0.7)"}}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { handleReviewClick(); setShowEventSection(false); }}
+                    className="w-full flex items-center space-x-3 py-2.5 px-3 rounded-lg text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-500 transition-colors duration-200 shadow-md"
+                >
+                    <Eye size={18} /> <span>Review Results</span>
+                </motion.button>
+            </nav>
+            <div className="mt-auto border-t border-gray-700 pt-4">
+                <p className="text-xs text-gray-500 text-center">© {new Date().getFullYear()} IHTMS-DSW</p>
+            </div>
         </aside>
 
         {/* Main content */}
         <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          <motion.div variants={pageContainerVariants} initial="hidden" animate="visible">
-
+            <motion.div variants={pageContainerVariants} initial="hidden" animate="visible">
+            
             <AnimatePresence>
-            {showReview && selectedEventIdForReview && (
-                <motion.div
-                    key="review-section"
-                    variants={formVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden"
-                >
-                    <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Event Result Review</h3>
-                    <EventResultReview eventId={selectedEventIdForReview} />
-                    <motion.button
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowReview(false)}
-                        className="mt-4 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm"
+                {showReview && ( // Render EventResultReview similar to TUSC
+                    <motion.div
+                        key="review-section-dsw"
+                        variants={formVariants} // Using TUSC's formVariants for this section
+                        initial="hidden" animate="visible" exit="exit"
+                        className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden"
                     >
-                        Close Review
-                    </motion.button>
-                </motion.div>
-            )}
-            </AnimatePresence>
-
-            <AnimatePresence mode="wait">
-              {editingEvent ? (
-                <motion.form
-                  key="edit-form"
-                  variants={formVariants} initial="hidden" animate="visible" exit="exit"
-                  onSubmit={handleUpdateSubmit}
-                  className="space-y-5 mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl"
-                >
-                  <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">Edit Event</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Name</label>
-                    <input type="text" name="name" value={updatedEventData.name} onChange={handleUpdateInputChange} required className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"/>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                    <textarea name="description" value={updatedEventData.description} onChange={handleUpdateInputChange} required rows="3" className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"/>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                    <input type="date" name="event_date" value={updatedEventData.event_date} onChange={handleUpdateInputChange} required className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100" style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}/>
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <motion.button type="submit" disabled={isSubmitting} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium disabled:opacity-60 flex items-center">
-                        {isSubmitting ? <Loader2 size={18} className="animate-spin mr-2"/> : <CheckCircle size={18} className="mr-2"/>} Update
-                    </motion.button>
-                    <motion.button type="button" onClick={() => setEditingEvent(null)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 rounded-lg bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium">Cancel</motion.button>
-                  </div>
-                </motion.form>
-              ) : showCreateForm && (
-                <motion.form
-                  key="create-form"
-                  variants={formVariants} initial="hidden" animate="visible" exit="exit"
-                  onSubmit={handleEventSubmit}
-                  className="space-y-5 mb-8 p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl"
-                >
-                  <h3 className="text-2xl font-semibold text-gray-800 dark:text-white">Create New Event</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Name</label>
-                    <input type="text" name="name" value={eventData.name} onChange={handleInputChange} required className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"/>
-                  </div>
-                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                    <textarea name="description" value={eventData.description} onChange={handleInputChange} required rows="3" className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"/>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
-                    <input type="date" name="event_date" value={eventData.event_date} onChange={handleInputChange} required className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100" style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}/>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
-                        <select name="type" value={eventData.type} onChange={handleInputChange} className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100">
-                            <option value="sports">Sports</option>
-                            <option value="cultural">Cultural</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mode</label>
-                        <select name="event_mode" value={eventData.event_mode} onChange={handleInputChange} className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100">
-                            <option value="solo">Solo</option>
-                            <option value="team">Team</option>
-                        </select>
-                    </div>
-                  </div>
-                   {eventData.event_mode === "team" && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Team Members</label>
-                        <input type="number" name="max_team_members" value={eventData.max_team_members} onChange={handleInputChange} min={1} required={eventData.event_mode === "team"} className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"/>
+                        <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Event Result Review</h3>
+                        <EventResultReview eventId={selectedEventIdForReview} /> 
+                        <motion.button
+                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={() => setShowReview(false)}
+                            className="mt-4 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm"
+                        >
+                            Close Review
+                        </motion.button>
                     </motion.div>
-                  )}
-                  <div className="flex gap-3 pt-2">
-                    <motion.button type="submit" disabled={isSubmitting} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-60 flex items-center">
-                        {isSubmitting ? <Loader2 size={18} className="animate-spin mr-2"/> : <PlusCircle size={18} className="mr-2"/>} Create
-                    </motion.button>
-                    <motion.button type="button" onClick={() => setShowCreateForm(false)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 rounded-lg bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium">Cancel</motion.button>
-                  </div>
-                </motion.form>
-              )}
+                )}
             </AnimatePresence>
-
 
             {showEventSection && (
-              <motion.div variants={pageContainerVariants} initial="hidden" animate="visible" className="p-4 md:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+              <motion.div 
+                  variants={pageContainerVariants} initial="hidden" animate="visible" // Main section container
+                  className="p-4 md:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl" >
                 <div className="flex flex-wrap items-center gap-3 mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white w-full sm:w-auto mb-2 sm:mb-0">Event Approvals</h3>
-                  <motion.button
-                    onClick={() => setViewMode("pending")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors
-                      ${viewMode === "pending" ? "bg-indigo-600 text-white dark:bg-indigo-500" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"}`}
-                  >
-                    <AlertTriangle size={16}/><span>Pending ({pending.length})</span>
-                  </motion.button>
-                  <motion.button
-                    onClick={() => setViewMode("approved")}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors
-                      ${viewMode === "approved" ? "bg-green-600 text-white dark:bg-green-500" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"}`}
-                  >
-                    <CheckCircle size={16}/><span>Approved ({approved.length})</span>
-                  </motion.button>
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white w-full sm:w-auto mb-2 sm:mb-0">DSW Event Approvals</h3>
+                    <motion.button
+                        onClick={() => setActiveViewFilter('pending')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors
+                            ${activeViewFilter === 'pending' ? "bg-indigo-600 text-white dark:bg-indigo-500" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"}`} >
+                        <AlertTriangle size={16}/><span>Pending DSW ({pendingByDSW.length})</span>
+                    </motion.button>
+                    <motion.button
+                        onClick={() => setActiveViewFilter('approved')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors
+                            ${activeViewFilter === 'approved' ? "bg-green-600 text-white dark:bg-green-500" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"}`} >
+                        <CheckCircle size={16}/><span>Approved DSW ({approvedByDSW.length})</span>
+                    </motion.button>
+                    <motion.button
+                        onClick={() => setActiveViewFilter('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors
+                            ${activeViewFilter === 'all' ? "bg-blue-600 text-white dark:bg-blue-500" : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"}`} >
+                        <ListFilter size={16}/><span>All Events ({allEvents.length})</span>
+                    </motion.button>
                 </div>
 
                 <AnimatePresence mode="wait">
-                  {viewMode === "pending" && (
-                    <motion.div key="pending-list" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                      {pending.length > 0 ? pending.map((event, index) => (
-                        <EventItemCard key={event.id} event={event} index={index} isPendingList={true} />
-                      )) : (
-                        <motion.p variants={itemVariants} initial="hidden" animate="visible" className="md:col-span-2 xl:col-span-3 text-center text-gray-500 dark:text-gray-400 py-8 flex flex-col items-center">
-                            <FileText size={32} className="mb-2 text-gray-400 dark:text-gray-500"/> No pending events.
-                        </motion.p>
-                      )}
-                    </motion.div>
-                  )}
-                  {viewMode === "approved" && (
-                    <motion.div key="approved-list" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                      {approved.length > 0 ? approved.map((event, index) => (
-                        <EventItemCard key={event.id} event={event} index={index} isPendingList={false} />
-                      )) : (
-                         <motion.p variants={itemVariants} initial="hidden" animate="visible" className="md:col-span-2 xl:col-span-3 text-center text-gray-500 dark:text-gray-400 py-8 flex flex-col items-center">
-                            <FileText size={32} className="mb-2 text-gray-400 dark:text-gray-500"/> No approved events.
-                        </motion.p>
-                      )}
-                    </motion.div>
-                  )}
+                  <motion.div
+                    key={activeViewFilter} // Re-render when filter changes
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6"
+                  >
+                    {eventsToDisplay.length > 0 ? eventsToDisplay.map((event, index) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        index={index}
+                        onApprove={handleApprove}
+                        onRejectOrUnapprove={handleReject}
+                        onEdit={handleEdit}
+                        isDSWPendingCard={!event.dsw_approved} // True if DSW has not approved
+                      />
+                    )) : (
+                      <motion.p 
+                        variants={itemVariants} initial="hidden" animate="visible"
+                        className="md:col-span-2 xl:col-span-3 text-center text-gray-500 dark:text-gray-400 py-8 flex flex-col items-center">
+                          <FileText size={32} className="mb-2 text-gray-400 dark:text-gray-500"/>
+                          No events found for this filter.
+                      </motion.p>
+                    )}
+                  </motion.div>
                 </AnimatePresence>
               </motion.div>
             )}
+
+            {/* Edit Event Modal (kept from original DSW structure) */}
+            <AnimatePresence>
+            {editingEvent && (
+              <motion.div
+                key="edit-modal-dsw" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 flex items-center justify-center bg-black/60 dark:bg-black/80 z-50 p-4"
+                onClick={() => setEditingEvent(null)} >
+                <motion.div
+                  variants={modalFormVariants} initial="initial" animate="animate" exit="exit"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg"
+                  onClick={(e) => e.stopPropagation()} >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Edit Event Details</h3>
+                    <button onClick={() => setEditingEvent(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <XCircle size={24}/>
+                    </button>
+                  </div>
+                  <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="space-y-4" >
+                    <div>
+                      <label htmlFor="eventNameEdit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Name</label>
+                      <input id="eventNameEdit" type="text" value={updatedEventData.name}
+                        onChange={(e) => setUpdatedEventData({ ...updatedEventData, name: e.target.value })}
+                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"
+                        required />
+                    </div>
+                    <div>
+                      <label htmlFor="eventDescriptionEdit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                      <textarea id="eventDescriptionEdit" rows={3} value={updatedEventData.description}
+                        onChange={(e) => setUpdatedEventData({ ...updatedEventData, description: e.target.value })}
+                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"
+                        required />
+                    </div>
+                    <div>
+                      <label htmlFor="eventDateEdit" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Event Date</label>
+                      <input id="eventDateEdit" type="date" value={updatedEventData.event_date}
+                        onChange={(e) => setUpdatedEventData({ ...updatedEventData, event_date: e.target.value })}
+                        className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 outline-none text-gray-800 dark:text-gray-100"
+                        style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
+                        required />
+                    </div>
+                    <div className="mt-6 flex justify-end space-x-3">
+                      <motion.button type="button" onClick={() => setEditingEvent(null)}
+                        whileHover={{scale:1.05}} whileTap={{scale:0.95}}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors" >
+                        Cancel
+                      </motion.button>
+                      <motion.button type="submit" disabled={isSubmittingUpdate}
+                        whileHover={{scale:1.05}} whileTap={{scale:0.95}}
+                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-60 flex items-center" >
+                        {isSubmittingUpdate ? <Loader2 size={16} className="animate-spin mr-2"/> : <CheckCircle size={16} className="mr-2"/>}
+                        Update Event
+                      </motion.button>
+                    </div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
+            </AnimatePresence>
           </motion.div>
         </main>
       </div>
@@ -543,4 +464,4 @@ const DashboardTUSC = () => {
   );
 };
 
-export default DashboardTUSC;
+export default DashboardDSW;

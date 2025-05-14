@@ -7,7 +7,8 @@ const {
   deleteParticipation,
   getParticipantsWithNames ,
   getSubmittedResults ,     // Cancel participation
-  registerParticipationByAdmin
+  registerParticipationByAdmin,
+  getPublicFinalResults
 } = require('../controllers/eventParticipationController');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
@@ -35,6 +36,7 @@ router.get('/submitted-results/:event_id', getSubmittedResults);
 
 router.post('/participations/byadmin', requireRole('dsw', 'tusc', 'hostel_admin'), registerParticipationByAdmin);
 
+router.get('/event-participations/public-final-results', getPublicFinalResults);
 
 
 module.exports = router;

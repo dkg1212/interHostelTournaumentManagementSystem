@@ -20,6 +20,8 @@ import ApprovedEvents from "./pages/ApprovedEvents";
 import EventResultReview from "./pages/EventResultReview";
 import AddTeamPage from "./pages/AddTeamPage";
 import NotificationPage from "./pages/NotificationpPage"
+import Results from "./pages/Results";
+
 function App() {
   return (
     <Router>
@@ -30,6 +32,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/results" element={<Results />} />
 
         {/* Dashboard Routes (Private) */}
         <Route path="/dashboard/*" element={<DashboardRouter />} />

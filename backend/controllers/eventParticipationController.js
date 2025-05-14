@@ -242,6 +242,72 @@ const getSubmittedResults = async (req, res) => {
   }
 };
 
+// ../controllers/eventParticipationController.js
+
+
+const getPublicFinalResults = async (req, res) => {
+  try {
+    const query = `
+      SELECT
+          ep.id as participation_id,
+          e.id as event_id,
+          e.name as event_name,
+          e.event_mode,
+          h.name as hostel_name,
+          ep.position,
+          ep.score,
+          -- ep.remarks, -- Assuming 'remarks' is NOT in event_participation based on your schema
+          e.description as event_remarks, -- Using event description as remarks for now
+          e.tusc_approved,
+          e.dsw_approved,
+          e.final_approved,
+          CASE
+              WHEN e.event_mode = 'solo' THEN u.name
+              WHEN e.event_mode = 'team' THEN t.name 
+              ELSE NULL
+          END AS participant_name
+      FROM
+          event_participation ep
+      JOIN
+          events e ON ep.event_id = e.id
+      LEFT JOIN
+          hostels h ON ep.hostel_id = h.id  -- hostel_id IS NULLABLE, so LEFT JOIN is good
+      LEFT JOIN 
+          users u ON ep.user_id = u.id AND e.event_mode = 'solo' -- Assuming user_id is in event_participation
+      LEFT JOIN 
+          teams t ON ep.team_id = t.id AND e.event_mode = 'team'   -- Assuming team_id is in event_participation
+      WHERE
+          e.final_approved = 1 
+      ORDER BY
+          e.event_mode, 
+          e.name, 
+          CASE ep.position 
+              WHEN '1st' THEN 1 
+              WHEN '2nd' THEN 2 
+              WHEN '3rd' THEN 3 
+              -- WHEN 'Honorable Mention' THEN 4 -- Not in your ENUM for position
+              WHEN 'participant' THEN 4 -- Adjusted order
+              -- WHEN 'Disqualified' THEN 6 -- Not in your ENUM for position
+              ELSE 5 
+          END, 
+          ep.score DESC;
+    `;
+    // Now you can directly use await db.query()
+    const [results] = await db.query(query); // Or db.execute(query)
+
+    const categorizedResults = {
+      solo_events: results.filter(r => r.event_mode === 'solo'),
+      team_events: results.filter(r => r.event_mode === 'team'),
+    };
+
+    res.json({ success: true, data: categorizedResults });
+  } catch (error) {
+    console.error('Error fetching public final results:', error);
+    res.status(500).json({ success: false, message: 'Server error fetching public results.' });
+  }
+};
+
+
 
 const registerParticipationByAdmin = async (req, res) => {
   try {
@@ -358,4 +424,5 @@ module.exports = {
   getParticipantsWithNames,
   getSubmittedResults,
   registerParticipationByAdmin,
+  getPublicFinalResults
 };

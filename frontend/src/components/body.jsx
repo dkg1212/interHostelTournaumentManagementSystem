@@ -1,5 +1,6 @@
+// src/components/Body.js (or wherever this file is located)
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import { ArrowRightCircle } from 'lucide-react';
 
 function Body() {
@@ -22,10 +23,10 @@ function Body() {
         autoPlay
         loop
         muted
-        playsInline
-        className="absolute w-full h-full object-cover z-0 brightness-75"
+        playsInline // Important for iOS autoplay
+        className="absolute w-full h-full object-cover z-0 brightness-75 blur-lg"
       >
-        <source src="/videos/tournament.mp4" type="video/mp4" />
+        <source src="/videos/new.mp4" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
 
@@ -39,8 +40,19 @@ function Body() {
           onClick={handleDashboardClick}
           className="bg-blue-600 hover:bg-blue-700 px-6 py-3 text-white rounded-full text-lg flex items-center gap-2 shadow-lg transition duration-300"
         >
-          Go to Dashboard <ArrowRightCircle />
+          Go to Dashboard <ArrowRightCircle size={20} />
         </button>
+
+        {/* Added link to public results page */}
+        <p className="mt-6 text-md"> {/* Added margin-top for spacing */}
+          Or, view{' '}
+          <Link
+            to="/results" // This should match the route defined in App.jsx for your Results page
+            className="font-semibold text-blue-300 hover:text-blue-100 underline transition duration-150 ease-in-out"
+          >
+            Public Event Results
+          </Link>
+        </p>
       </div>
     </div>
   );
