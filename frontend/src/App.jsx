@@ -19,7 +19,7 @@ import RegisterStudentPage from './pages/RegisterStudentPage';
 import ApprovedEvents from "./pages/ApprovedEvents";
 import EventResultReview from "./pages/EventResultReview";
 import AddTeamPage from "./pages/AddTeamPage";
-
+import NotificationPage from "./pages/NotificationpPage"
 function App() {
   return (
     <Router>
@@ -40,6 +40,7 @@ function App() {
         <Route path="/student/events" element={<ApprovedEvents />} />
        <Route path="/event-result-review/:eventId" element={<EventResultReview />} />
       <Route path="/add-team" element={<AddTeamPage />} /> {/* Route for Add Team */}
+      <Route path="/notifications" element={<NotificationPage />} />
 
 
         {/* Edit Event Score Page */}

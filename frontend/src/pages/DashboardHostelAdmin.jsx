@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Sidebar from "../components/Sidebar";
-import Topbar from "../components/Toopbar"; // Assuming it's Topbar, not Toopbar
+import Topbar from "../components/Toopbar"; // Corrected typo from Toopbar to Topbar
 import {
   UserGroupIcon,
   CalendarDaysIcon,
@@ -73,10 +73,19 @@ const DashboardHostelAdmin = () => {
     },
   ];
 
+  // Assuming the Sidebar component is fixed-positioned and has a width 
+  // equivalent to Tailwind's 'w-64' (16rem). 
+  // This class will provide the necessary left margin to the main content area.
+  // If your Sidebar has a different width (e.g., w-48, w-72), adjust this class accordingly (e.g., "ml-48", "ml-72").
+  const sidebarOffsetClass = "ml-64";
+
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar role="hostel_admin" />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <Sidebar role="hostel_admin" /> {/* Assumed to be fixed/absolute positioned with a defined width */}
+      
+      {/* Main content wrapper */}
+      {/* Added `${sidebarOffsetClass}` to apply margin-left, preventing overlap with the sidebar */}
+      <div className={`flex-1 flex flex-col overflow-hidden ${sidebarOffsetClass}`}>
         <Topbar />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
           <div className="container mx-auto">

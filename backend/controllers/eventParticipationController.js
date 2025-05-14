@@ -245,44 +245,78 @@ const getSubmittedResults = async (req, res) => {
 
 const registerParticipationByAdmin = async (req, res) => {
   try {
-    const { user_id, team_id, event_name, position, score } = req.body;
-    const { role } = req.user;
+    // hostel_id is now conditional in req.body (only expected for team events)
+    const { user_id, team_id, event_name, position, score, hostel_id: hostel_id_from_request } = req.body;
 
     if (!event_name) {
       return res.status(400).json({ success: false, message: 'Event name is required' });
     }
 
-    if (user_id && team_id) {
-      return res.status(400).json({ success: false, message: 'Provide either user_id or team_id, not both' });
-    }
-
-    if (!user_id && !team_id) {
-      return res.status(400).json({ success: false, message: 'Either user_id or team_id must be provided' });
-    }
-
-    // Get event ID
-    const [eventResult] = await db.query('SELECT id FROM events WHERE name = ?', [event_name]);
+    const [eventResult] = await db.query('SELECT id, event_mode FROM events WHERE name = ?', [event_name]);
     if (eventResult.length === 0) {
       return res.status(404).json({ success: false, message: 'Event not found' });
     }
     const event_id = eventResult[0].id;
+    const event_mode = eventResult[0].event_mode;
 
-    let hostel_id = null;
+    let final_hostel_id = null; // This will store the hostel_id to be inserted
 
-    if (user_id) {
+    if (event_mode === 'team') {
+      if (user_id) {
+        return res.status(400).json({ success: false, message: 'This is a team event. Please provide a team_id, not a user_id.' });
+      }
+      if (!team_id) {
+        return res.status(400).json({ success: false, message: 'This is a team event. Team_id is required.' });
+      }
+      // For team events, hostel_id MUST be provided in the request
+      // if (hostel_id_from_request === undefined || hostel_id_from_request === null || hostel_id_from_request === '') {
+      //   return res.status(400).json({ success: false, message: 'Hostel ID is required for team participation.' });
+      // }
+      // // Optional: Validate if the provided hostel_id exists
+      // const [hostelExistsResult] = await db.query('SELECT id FROM hostels WHERE id = ?', [hostel_id_from_request]);
+      // if (hostelExistsResult.length === 0) {
+      //     return res.status(404).json({ success: false, message: 'Provided Hostel ID for team not found.' });
+      // }
+      // final_hostel_id = hostel_id_from_request;
+
+      // Check if team exists
+      const [teamExistsResultDB] = await db.query('SELECT id FROM teams WHERE id = ?', [team_id]);
+      if (teamExistsResultDB.length === 0) {
+        return res.status(404).json({ success: false, message: 'Team not found' });
+      }
+      // Check if team already registered
+      const [existingTeam] = await db.query(
+        'SELECT id FROM event_participation WHERE event_id = ? AND team_id = ?',
+        [event_id, team_id]
+      );
+      if (existingTeam.length > 0) {
+        return res.status(400).json({ success: false, message: 'Team already registered for this event' });
+      }
+
+    } else if (event_mode === 'solo') {
+      if (team_id) {
+        return res.status(400).json({ success: false, message: 'This is a solo event. Please provide a user_id, not a team_id.' });
+      }
+      if (!user_id) {
+        return res.status(400).json({ success: false, message: 'This is a solo event. User_id is required.' });
+      }
+      if (hostel_id_from_request !== undefined && hostel_id_from_request !== null && hostel_id_from_request !== '') {
+         return res.status(400).json({ success: false, message: "Hostel ID should not be provided for solo event registration by admin; it's derived from the user." });
+      }
+
+
+      // For solo events, derive hostel_id from the user
       const [userResult] = await db.query('SELECT hostel_id, role FROM users WHERE id = ?', [user_id]);
       if (userResult.length === 0) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
-
       const { hostel_id: userHostel, role: participantRole } = userResult[0];
 
-      // Only allow students to be registered
       if (participantRole !== 'student') {
-        return res.status(400).json({ success: false, message: 'Only students can be registered as individual participants' });
+        return res.status(400).json({ success: false, message: 'Only students can be registered as individual participants.' });
       }
-
-      hostel_id = userHostel || 1;
+      
+      final_hostel_id = userHostel; // This can be NULL if the user has no hostel_id
 
       // Check if already registered
       const [existingUser] = await db.query(
@@ -292,30 +326,16 @@ const registerParticipationByAdmin = async (req, res) => {
       if (existingUser.length > 0) {
         return res.status(400).json({ success: false, message: 'User already registered for this event' });
       }
+    } else {
+      return res.status(500).json({ success: false, message: 'Invalid event mode found for this event.' });
     }
 
-    if (team_id) {
-      const [teamResult] = await db.query('SELECT hostel_id FROM teams WHERE id = ?', [team_id]);
-      if (teamResult.length === 0) {
-        return res.status(404).json({ success: false, message: 'Team not found' });
-      }
+    // Note: `final_hostel_id` can be NULL here if it's a solo event and the user has no hostel.
+    // Your `event_participation` table's `hostel_id` column must allow NULLs for this to work.
 
-      hostel_id = teamResult[0].hostel_id || 1;
-
-      // Check if team already registered
-      const [existingTeam] = await db.query(
-        'SELECT id FROM event_participation WHERE event_id = ? AND team_id = ?',
-        [event_id, team_id]
-      );
-      if (existingTeam.length > 0) {
-        return res.status(400).json({ success: false, message: 'Team already registered for this event' });
-      }
-    }
-
-    // Insert participation
     const [insertResult] = await db.query(
       'INSERT INTO event_participation (event_id, hostel_id, user_id, team_id, position, score) VALUES (?, ?, ?, ?, ?, ?)',
-      [event_id, hostel_id, user_id || null, team_id || null, position, score]
+      [event_id, final_hostel_id, user_id || null, team_id || null, position, score]
     );
 
     res.status(201).json({
@@ -325,12 +345,10 @@ const registerParticipationByAdmin = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error in registerParticipation:", error);
+    console.error("Error in registerParticipationByAdmin:", error);
     res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
-
-
 
 module.exports = {
   registerParticipation,
